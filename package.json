@@ -1,0 +1,25 @@
+{
+  "name": "tribe_testing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "body.js",
+  "dependencies": {
+    "@tensorflow-models/body-pix": "^2.0.5",
+    "@tensorflow/tfjs": "^2.4.0",
+    "face-api.js": "^0.22.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hectorlopezv/tribe_testing.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hectorlopezv/tribe_testing/issues"
+  },
+  "homepage": "https://github.com/hectorlopezv/tribe_testing#readme"
+}
