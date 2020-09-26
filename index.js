@@ -1,80 +1,143 @@
+//variables
+const video = document.getElementById('video');
+const canvas = document.getElementById('output');
+let net;
 
-
-const video = document.querySelector('video');
-const ctx = canvas.getContext('2d');
-console.log(ctx);
-
-const loadAndUseBodyPix = async () => {
-
-    //model config
-    const modelConfig =
-    {
-      architecture: 'MobileNetV1',
-      outputStride: 16,
-      multiplier: 0.75,
-      quantBytes: 2
-  }
-    
-    //load model With Config
-    const modelLoaded = await bodyPix.load(modelConfig);
-    return modelLoaded
-} 
-
-
-
-// get the person out of the background 
-const PersonSegmentation = async () => {
+/*------VIDEOS RESOURCES -----*/
+// Get available Devices of THE uSER
+const getDevices = async () => {
   console.log('entro');
-    const net = await loadAndUseBodyPix()
-    .then(response =>response)
-    .catch(err => console.log(err));
-    console.log(net);
-
-    const configSegmentation = {
-        flipHorizontal: false,
-        internalResolution: 'medium',
-        segmentationThreshold: 0.7
-    }
-
-    setInterval(async () =>{
-        await net.segmentPerson(video, configSegmentation)
-        .then(response => {
-            console.log(response);
-          })
-        .catch(err => console.log(err));
-
-    }, 300);
-
-  
+  //que el user agent sea compatible con mediaDevices
+  if(!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+    alertPrompt();
+   return [];
   }
+  //ahora miramos si  que devices ofrece el USER
+  //alertPrompt('Lo soporta');
+  const devices = await navigator.mediaDevices.enumerateDevices();
 
-const startVideo = async () => {
+  // Por ahora me interesa solo el video-Label-deviceId
+  const VideoDevices = devices.filter( device  => device.kind === 'videoinput');
+  console.log(VideoDevices);
+  return VideoDevices
 
-    const constraints = { 
-      audio: {
-        echoCancellation: true, 
-        noiseSuppression: true, 
-        sampleRate: 44100 }, 
-        video: true };
-    await navigator.mediaDevices.getUserMedia(constraints)
-    .then(stream =>  {
-      /* use the stream */
-      //var echoCancellation = MediaTrackSettings.echoCancellation;
-      //console.log(echoCancellation);
-      //console.log('entro aqui');
-      window.stream = stream; // make variable available to browser console
-      video.srcObject = stream; // hacemos que salga el stream
-    })
-    .catch(error => console.log(error));
-  
+}
+//stop any video playing before basically
+const stopVideo = () => {
+  //solo si srcObject esta definido borra sus tracks.... y exista el video element..
+  if(video && video.srcObject)
+  {
+    console.log('papi');
+    video.srcObject.getTracks().forEach(track => {
+      track.stop();
+    });
+    video.srcObject = null;
   }
+}
+
+//load video configs
+const setVideo = async () => {
+
+  stopVideo(video);
+  const config  = {
+    audio: false, 
+    video: true 
+  };
+  const stream = await navigator.mediaDevices.getUserMedia(config);
+  video.srcObject = stream;
+
+  //retornamos promesa para forzar que espere y retorne
+  return PromiseCreator();
+}
+
+//ponemos el video con sus valores
+const PromiseCreator = () => {
+  return new Promise((resolve, reject) => {
+    video.onloadedmetadata = () => {
+      video.width = video.videoWidth;
+      video.height = video.videoHeight;
+      resolve(video);
+    };
+  });
+}
 
 
-startVideo();
+async function loadVideo() {
+  let state_video;
+  try {
+    state_video = await setVideo();
+  } catch (e) {
+     throw e;
+  }
+  //"comenzamos" el stream para que se carge y podamos a empezar a aplica prediciones
+  state_video.play();
+}
 
 
 
-video.addEventListener('loadeddata', () => {
 
-    PersonSegmentation();  
-})
+
+
+
+
+
+
+
+
+
+
+
+
+/* --------- ML PART-------*/
+async function loadModel(){
+  const modelConfig = {
+    architecture: 'MobileNetV1',
+    outputStride: 16,
+    multiplier: 1,
+    quantBytes: 2
+  };
+
+  net = await bodyPix.load(modelConfig);
+  console.log(net);
+  return net;
+
+}
+
+async function makePredictionPerson(){
+  const prediction = await net.segmentPerson(video);
+  console.log(prediction);
+  return prediction; 
+}
+
+
+
+async function load () {
+  console.log('hola');
+  const videoElement = document.querySelector('video#video');
+const net = await bodyPix.load();
+const segmentation = await net.segmentPerson(videoElement);
+}
+
+async function execute() {
+
+  await getDevices();
+  
+  await makePredictionPerson(await loadModel(await loadVideo()));
+
+  //await stopVideo();
+
+}
+
+execute();
+
+
+
+
+
+
+
+
+
+
+
+

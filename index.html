@@ -6,15 +6,27 @@
     <title>BodyPix</title>
 
     <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.4.0/dist/tf.min.js" integrity="sha256-ab08IYO0pzegsMiph4FJBj/nHxcxe3k20Yr22XMCeE4=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
 
     <script defer src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix@2.0.5/dist/body-pix.min.js" integrity="sha256-y8hgQ+SI0u26/C+l6+qznd5isuLIyuvF0DZvvv780Nk=" crossorigin="anonymous"></script>
-    <script   src="index.js" type="module"></script>
-
+    
+    <link  rel="stylesheet" href="./index.css">
+    <script>
+        var loadedmetadata = false;
+        if (window.addEventListener) {
+            window.addEventListener('loadedmetadata', function(ev) {
+                    loadedmetadata = true;
+            }, true);
+        }
+        </script>
+    <script    src="index.js" type="module"></script>
     
     </head>
 <body>
     
-    <video id="video" width="720" height="560" autoplay muted></video>
-    <canvas id="canvas"></canvas>
+    <div id="main" >
+        <video id="video"  autoplay playsinline controls="false"></video>
+        <canvas id="output" autoplay playsinline controls="false">
+      </canvas></div>
 </body>
 </html>

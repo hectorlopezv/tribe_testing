@@ -5,33 +5,33 @@ html {
 *,*::after,*::before {
     margin: 0;
     padding: 0;
-
 }
 
+
 body {
-    background: black;
-    color:#CCCCCC; 
-  }
-  #c2 {
-    background-image: url(media/foo.png);
-    background-repeat: no-repeat;
-  }
-  div {
- 
-    border :1px solid #444444;
-    
+  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", Helvetica, Arial, sans-serif; 
+  position: relative;
+}
+#video {
+  position: absolute;
+  display: block;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  border-top: 1px solid red;
+  /*z-index: 2;*/
+}
 
-  }
+#output {
+  position: absolute;
+  display: block;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 50%);
+}
 
-  #video {
-      background-color: white;
-      border :1px solid red;
-  }
-.container {
-    
-    display: flex;
-    justify-content: center;
-    overflow: hidden;
-    align-items: bottom;
-    
+#main { 
+
+position: relative;  
+
 }
