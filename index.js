@@ -1,7 +1,6 @@
 //variables
 const video = document.getElementById('video');
 const canvas = document.getElementById('output');
-let net;
 
 /*------VIDEOS RESOURCES -----*/
 // Get available Devices of THE uSER
@@ -56,6 +55,10 @@ const PromiseCreator = () => {
     video.onloadedmetadata = () => {
       video.width = video.videoWidth;
       video.height = video.videoHeight;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+     
       resolve(video);
     };
   });
@@ -104,27 +107,105 @@ async function loadModel(){
 }
 
 async function makePredictionPerson(){
-  const prediction = await net.segmentPerson(video);
-  console.log(prediction);
+  const config = {
+    flipHorizontal: false,
+    internalResolution: 'full',
+    segmentationThreshold: 0.8
+  }
+  prediction = await net.segmentPerson(video, config);
+  //console.log(prediction);
   return prediction; 
 }
 
+async function maskEffect (prediction) {
+  //consists of 0 and 1
+  //1 where the person is 0 the background
+  const maskBackground = true;
+  // Convert the segmentation into a mask to darken the background.
+  const foregroundColor = {r: 0, g: 0, b: 0, a: 0};//the human part
+  const backgroundColor = {r: 255, g: 255, b: 255, a: 255};//the background part
+  const mask = await bodyPix.toMask(prediction, foregroundColor, backgroundColor);
+  return mask;
 
-
-async function load () {
-  console.log('hola');
-  const videoElement = document.querySelector('video#video');
-const net = await bodyPix.load();
-const segmentation = await net.segmentPerson(videoElement);
 }
 
+//remove background...
+async function removeBackground(){
+  const context = canvas.getContext('2d');
+  const camera = video
+  context.drawImage(camera, 0, 0, camera.width, camera.height);
+  var imageData = context.getImageData(0,0, camera.width, camera.height);
+  var pixel = imageData.data;//los pixeles de la imagen
+  for (var p = 0; p<pixel.length; p += 4)
+  {
+    if (prediction.data[p/4] == 0) {
+        pixel[p+3] = 0;// la matrix es de RGB A la idea es poner la transparencia en 0
+    }
+  }
+  context.imageSmoothingEnabled = true;
+  context.putImageData(imageData,0,0);
+
+}
+;
+async function drawMask(){
+    //Effect to call
+    const opacity = 1;
+
+
+    
+    const maskBlurAmount = 4;
+    const flipHorizontal = false;
+    //console.log(prediction);
+    const mask = await maskEffect(prediction);
+   
+  
+    //bodyPix.drawMask(canvas, video, mask, opacity, maskBlurAmount, flipHorizontal);
+    //put background image
+   
+    canvas.getContext('2d').drawImage(video, 0, 0, video.width, video.height);
+    const imageData= canvas.getContext('2d').getImageData(0, 0, video.width, video.height);
+    const pixel = imageData.data;
+
+    for (var p = 0; p<pixel.length; p+=4)
+    {
+        if (prediction.data[p/4] == 0) {
+            pixel[p+3] = 0;
+        }
+    }
+    
+    canvas.getContext('2d').imageSmoothingEnabled = true;
+    canvas.getContext('2d').putImageData(imageData,0,0);
+
+  
+
+}
+
+async function clearCanvas(){
+  const context = canvas.getContext('2d');
+  await context.clearRect(0, 0, canvas.width, canvas.height);
+}
+let net;
+let prediction;
 async function execute() {
 
-  await getDevices();
-  
-  await makePredictionPerson(await loadModel(await loadVideo()));
+await getDevices();//good mira devices disponibles
+await loadVideo();//good carga el video
+await loadModel();//carga el modelo pertinente
+
+
+//hacemos el loop 1-hace prediccion , 2-limpiar el canvas 3-colorear el canvas 4- repetir
+setInterval(async ()=> {
+  //console.log('positivo');
+  await makePredictionPerson();
+  //await clearCanvas();
+  await drawMask();
+},200)
+
+
+  //await drawMask(await makePredictionPerson(await loadModel(await loadVideo()))) ;
 
   //await stopVideo();
+  
 
 }
 

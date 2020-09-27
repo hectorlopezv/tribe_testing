@@ -25,11 +25,30 @@ body {
 #output {
   position: absolute;
   display: block;
+ /*
   top: 50%;
   left: 50%;
   transform: translate(-50%, 50%);
+*/
 }
 
+#test {
+  background-image: url('./js.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center; 
+  width: 640px;
+  height: 480px;
+}
+img  {
+  position: absolute;
+  display: block;
+  
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  
+}
 #main { 
 
 position: relative;  
