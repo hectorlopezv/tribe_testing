@@ -95,6 +95,7 @@ async function loadVideo() {
 
 /* --------- ML PART-------*/
 async function loadModel(){
+  
   const modelConfig = {
     architecture: 'MobileNetV1',
     outputStride: 16,
@@ -108,12 +109,27 @@ async function loadModel(){
 
 }
 
+
+async function blurRealBackground() {
+  //podemos hacer como un slider aqui con estos 2 parametros
+  const backgroundBlurAmount = 20;
+  const edgeBlurAmount = 3;
+  const flipHorizontal = false;
+  
+  // Draw the image with the background blurred onto the canvas. The edge between
+  // the person and blurred background is blurred by 3 pixels.
+  bodyPix.drawBokehEffect(
+      canvas, video, prediction, backgroundBlurAmount,
+      edgeBlurAmount, true);
+}
+
+
 //el perreo
 async function makePredictionPerson(){
   const config = {
-    flipHorizontal: false,
+    flipHorizontal: true,
     internalResolution: 'high',
-    segmentationThreshold: 0.65
+    segmentationThreshold: 0.8
   }
   prediction = await net.segmentPerson(video, config);
   //console.log(prediction);
@@ -126,7 +142,7 @@ async function maskEffect (prediction) {
   const maskBackground = true;
   // Convert the segmentation into a mask to darken the background.
   const foregroundColor = {r: 0, g: 0, b: 0, a: 0};//the human part
-  const backgroundColor = {r: 255, g: 255, b: 255, a: 255};//the background part
+  const backgroundColor = {r: 0, g: 0, b: 0, a: 0};//the background part
   const mask = await bodyPix.toMask(prediction, foregroundColor, backgroundColor);
   return mask;
 
@@ -150,22 +166,18 @@ async function removeBackground(){
 
 }
 ;
-async function drawMask(){
+async function drawMaskVirtualBackground(){
     //Effect to call
     const opacity = 1;
-
-
-    
     const maskBlurAmount = 4;
     const flipHorizontal = false;
     //console.log(prediction);
     const mask = await maskEffect(prediction);
-   
-  
-    //bodyPix.drawMask(canvas, video, mask, opacity, maskBlurAmount, flipHorizontal);
+
+    
     //put background image
-   
     canvas.getContext('2d').drawImage(video, 0, 0, video.width, video.height);
+    
     const imageData= canvas.getContext('2d').getImageData(0, 0, video.width, video.height);
     const pixel = imageData.data;
 
@@ -178,15 +190,14 @@ async function drawMask(){
     
     canvas.getContext('2d').imageSmoothingEnabled = true;
     canvas.getContext('2d').putImageData(imageData,0,0);
-
-  
-
 }
 
 async function clearCanvas(){
   const context = canvas.getContext('2d');
   await context.clearRect(0, 0, canvas.width, canvas.height);
 }
+
+
 let net;
 let prediction;
 async function execute() {
@@ -201,8 +212,13 @@ await loadModel();//carga el modelo pertinente
 setInterval(async ()=> {
   //console.log('positivo');
   await makePredictionPerson();
-  //await clearCanvas();
-  await drawMask();
+  await clearCanvas();
+  
+  //para el background virtual
+  //await drawMaskVirtualBackground();
+
+  //blur para el background real
+  await blurRealBackground();
 },200)
 
 
