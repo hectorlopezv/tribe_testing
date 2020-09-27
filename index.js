@@ -1,7 +1,20 @@
 //variables
 const video = document.getElementById('video');
-const canvas = document.getElementById('output');
+const canvas_main = document.getElementById('output');
+const foreground = {
+  r: 0,
+  g: 0,
+  b: 0,
+  a: 0
+}
 
+const background = {
+  r: 0,
+  g: 0,
+  b: 0,
+  a: 255
+}
+const foregroundIds = [1]
 /*------VIDEOS RESOURCES -----*/
 // Get available Devices of THE uSER
 const getDevices = async () => {
@@ -57,8 +70,8 @@ const PromiseCreator = () => {
     video.onloadedmetadata = () => {
       video.width = video.videoWidth;
       video.height = video.videoHeight;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      canvas_main.width = video.videoWidth;
+      canvas_main.height = video.videoHeight;
       
      
       resolve(video);
@@ -84,23 +97,14 @@ async function loadVideo() {
 
 
 
-
-
-
-
-
-
-
-
-
 /* --------- ML PART-------*/
 async function loadModel(){
   
   const modelConfig = {
     architecture: 'MobileNetV1',
     outputStride: 16,
-    multiplier: 1,
-    quantBytes: 4
+    multiplier: .75,
+    quantBytes: 2
   };
 
   net = await bodyPix.load(modelConfig);
@@ -112,8 +116,8 @@ async function loadModel(){
 
 async function blurRealBackground() {
   //podemos hacer como un slider aqui con estos 2 parametros
-  const backgroundBlurAmount = 20;
-  const edgeBlurAmount = 3;
+  const backgroundBlurAmount = 11;
+  const edgeBlurAmount = 7;
   const flipHorizontal = false;
   
   // Draw the image with the background blurred onto the canvas. The edge between
@@ -123,18 +127,183 @@ async function blurRealBackground() {
       edgeBlurAmount, true);
 }
 
+//creamos un canvas.. para el elemento del video para el background
+function createCanvas(){
+  const canvas = document.createElement('canvas');
+  return canvas
+}
+
+function drawStroke(bytes, row, column, width,radius) {
+for (let i = -radius; i <= radius; i++) {
+  for (let j = -radius; j <= radius; j++) {
+    if (i !== 0 && j !== 0) {
+      const n = (row + i) * width + (column + j);
+      bytes[4 * n + 0] = color.r;
+      bytes[4 * n + 1] = color.g;
+      bytes[4 * n + 2] = color.b;
+      bytes[4 * n + 3] = color.a;
+    }
+  }
+}
+}
+
+function isSegmentationBoundary(segmentationData, row, column, width, radius){
+let numberBackgroundPixels = 0;
+for (let i = -radius; i <= radius; i++) {
+  for (let j = -radius; j <= radius; j++) {
+    if (i !== 0 && j !== 0) {
+      const n = (row + i) * width + (column + j);
+      if (!foregroundIds.some(id => id === segmentationData[n])) {
+        numberBackgroundPixels += 1;
+      }
+    }
+  }
+}
+return numberBackgroundPixels > 0;
+}
+
+
+function blurBackground(){
+  const canvas_new = createCanvas();
+    //if no blur return the same canvas withe the image
+  //else blur all the image with the desired blur ctx effect
+
+  //resize canvas to video
+  const {height, width} =  video;
+  canvas_new.height = height;
+  canvas_new.width = width;
+  //get context 2d
+  const ctx = canvas_new.getContext('2d');
+  //limpiamos el canvas por si
+  ctx.clearRect(0, 0, width, height);
+  //gurdamos el estado.. como estado pila
+  ctx.save();
+  //pintar en el canvas dependiendo de la condicion
+  ctx.filter = 'blur(5px)';
+  ctx.drawImage(video, 0, 0, width, height)
+  //
+  ctx.restore();
+  //canvas_main.getContext('2d').drawImage(canvas_new, 0, 0, width, height);
+  
+  return canvas_new
+}
+
+function personMask(){
+  const canvas_new = createCanvas();
+  const ctx = canvas_new.getContext('2d');
+  
+  const {height, width} = video;
+  canvas_new.height = height;
+  canvas_new.width = width;
+
+  canvas_new.getContext('2d').clearRect(0, 0, width, height);
+  canvas_new.getContext('2d').drawImage(video, 0, 0, video.width, video.height);
+  ctx.save();
+  const imageData = canvas_new.getContext('2d').getImageData(0, 0, video.width, video.height);
+  const pixel = imageData.data;
+
+  for (var p = 0; p<pixel.length; p+=4)
+  {
+      if (prediction.data[p/4] == 0) {
+          pixel[p+3] = 0;
+      }
+  }
+
+  canvas_new.getContext('2d').imageSmoothingEnabled = true;
+  canvas_new.getContext('2d').putImageData(imageData,0,0);
+  ctx.restore();
+  return  canvas_new
+}
+
+
+async function blur_test(){
+
+  const blurVideo = blurBackground();
+
+  //get context of main_canvas
+  const ctx = canvas_main.getContext('2d');
+  ctx.drawImage(blurVideo, 0, 0);
+
+  const person = personMask();
+  //console.log(person);
+  //ctx.clearRect(0, 0, person.width, person.height);
+  ctx.drawImage(person, 0, 0);
+  //ahora neceistamos sacar a la persona del background
+
+  
+  
+
+
+
+//drawWithCompositing(ctx, personMask, 'destination-in');
+//drawWithCompositing(ctx, blurredImage, 'destination-over');
+
+}
+
+
+
+function drawWithCompositing(ctx, image,compositOperation) {
+  ctx.globalCompositeOperation = compositOperation;
+  ctx.drawImage(image, 0, 0);
+}
+
+function sacar_persona(){
+  //creamos array vacio para la mask
+  //rgb A
+  const {width, height} = prediction;
+  const bytes = new Uint8ClampedArray(width * height * 4);
+
+  for (let i = 0; i < height; i += 1) {
+    for (let j = 0; j < width; j += 1) {
+      const n = i * width + j;
+      bytes[4 * n + 0] = background.r;
+      bytes[4 * n + 1] = background.g;
+      bytes[4 * n + 2] = background.b;
+      bytes[4 * n + 3] = background.a;
+      for (let k = 0; k < prediction.length; k++) {
+        if (foregroundIds.some(
+                id => id === prediction[k].data[n])) {
+          bytes[4 * n] = foreground.r;
+          bytes[4 * n + 1] = foreground.g;
+          bytes[4 * n + 2] = foreground.b;
+          bytes[4 * n + 3] = foreground.a;
+          const isBoundary = isSegmentationBoundary(
+              prediction[k].data, i, j, width,
+              foregroundIds);
+          if (drawContour && i - 1 >= 0 && i + 1 < height && j - 1 >= 0 &&
+              j + 1 < width && isBoundary) {
+            drawStroke(bytes, i, j, width, 1);
+          }
+        }
+      }
+    }
+  }
+
+  return new ImageData(bytes, width, height);
+
+}
+
+
+
+
+
+
+
+
 
 //el perreo
 async function makePredictionPerson(){
   const config = {
     flipHorizontal: true,
-    internalResolution: 'high',
-    segmentationThreshold: 0.8
+    internalResolution: 'full',
+    segmentationThreshold: 0.88
   }
   prediction = await net.segmentPerson(video, config);
   //console.log(prediction);
   return prediction; 
 }
+
+
 
 async function maskEffect (prediction) {
   //consists of 0 and 1
@@ -165,7 +334,11 @@ async function removeBackground(){
   context.putImageData(imageData,0,0);
 
 }
-;
+
+
+
+
+
 async function drawMaskVirtualBackground(){
     //Effect to call
     const opacity = 1;
@@ -212,13 +385,14 @@ await loadModel();//carga el modelo pertinente
 setInterval(async ()=> {
   //console.log('positivo');
   await makePredictionPerson();
-  await clearCanvas();
+  //await clearCanvas();
   
   //para el background virtual
   //await drawMaskVirtualBackground();
 
   //blur para el background real
-  await blurRealBackground();
+  //await blurRealBackground();
+   blur_test();
 },200)
 
 
