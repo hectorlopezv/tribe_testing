@@ -17,6 +17,8 @@ const getDevices = async () => {
 
   // Por ahora me interesa solo el video-Label-deviceId
   const VideoDevices = devices.filter( device  => device.kind === 'videoinput');
+
+  //si no retornar error si no tiene
   console.log(VideoDevices);
   return VideoDevices
 
@@ -97,7 +99,7 @@ async function loadModel(){
     architecture: 'MobileNetV1',
     outputStride: 16,
     multiplier: 1,
-    quantBytes: 2
+    quantBytes: 4
   };
 
   net = await bodyPix.load(modelConfig);
@@ -106,11 +108,12 @@ async function loadModel(){
 
 }
 
+//el perreo
 async function makePredictionPerson(){
   const config = {
     flipHorizontal: false,
-    internalResolution: 'full',
-    segmentationThreshold: 0.8
+    internalResolution: 'high',
+    segmentationThreshold: 0.65
   }
   prediction = await net.segmentPerson(video, config);
   //console.log(prediction);
@@ -190,6 +193,7 @@ async function execute() {
 
 await getDevices();//good mira devices disponibles
 await loadVideo();//good carga el video
+
 await loadModel();//carga el modelo pertinente
 
 

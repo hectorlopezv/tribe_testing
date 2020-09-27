@@ -25,6 +25,7 @@ body {
 #output {
   position: absolute;
   display: block;
+  z-index: 99;
  /*
   top: 50%;
   left: 50%;
@@ -39,6 +40,8 @@ body {
   background-position: center center; 
   width: 640px;
   height: 480px;
+  z-index: -1;
+  /*filter: blur(10px);*/
 }
 img  {
   position: absolute;
