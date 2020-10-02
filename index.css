@@ -25,14 +25,32 @@ body {
 #output {
   position: absolute;
   display: block;
-  z-index: 99;
+  background-color: transparent;
+  transform: scaleX(-1);
+  background-color: transparent;
+  
  /*
   top: 50%;
   left: 50%;
   transform: translate(-50%, 50%);
 */
 }
+.container {
+  /*
+  background-image: url('./js.jpg');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  */ 
+  width: 640px;
+  height: 480px;
+  /*background-color: transparent;*/
+  margin: 0 auto;
+  position: absolute;
+  top: 20%;
+  left: 30%;
 
+}
 #test {
   background-image: url('./js.jpg');
   background-size: cover;
@@ -40,9 +58,8 @@ body {
   background-position: center center; 
   width: 640px;
   height: 480px;
-  z-index: -1;
-  filter: blur(1px);
-}
+  
+  }
 img  {
   position: absolute;
   display: block;
