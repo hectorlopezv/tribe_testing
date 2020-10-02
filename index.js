@@ -49,7 +49,9 @@ const execute = async () => {
         //await blurBackground(tracker.canvas_1.firstChild, tracker.video, tracker.prediction, 18, 15,true);
         
         //GrayScale -- Pixel manipulation
-        grayScale(tracker);
+        //grayScale(tracker);
+        
+        //background manipulation
 
         
     
