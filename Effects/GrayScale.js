@@ -3,7 +3,7 @@ import videoImageData from '../VideoSetup/GetVideoData.js';
 function grayScale(tracker){
     const {data:map} = tracker.prediction;
     const lengthPixels = map.length ; //como es RGBA como cada elemento es un pixel
-    
+    console.log(lengthPixels);
     // Extracting video data
     const { data:imgData } = videoImageData(1,tracker.video.width, tracker.video.height);
     

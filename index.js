@@ -8,6 +8,7 @@ import blurBackground from './Effects/BlurBackgrond.js';
 import createCanvas from './VideoSetup/CreateCanvas.js';
 import loadVideo from './VideoSetup/Load.js';
 import grayScale from './Effects/GrayScale.js';
+import virtualBackground from './Effects/VirtualBackground.js';
 
 //variables
 const video = document.getElementById('video');
@@ -52,10 +53,12 @@ const execute = async () => {
         //grayScale(tracker);
         
         //background manipulation
+        const URL = './js.jpg';
+        virtualBackground(URL, tracker.video.width, tracker.video.height, tracker);
 
         
     
-    },1000/25);
+    },1000/24);
 
 }
 
