@@ -6,7 +6,7 @@ import setVideo, {addVideo } from './VideoSetup/Setup.js';
 import makePredictionPerson from './ModelSetup/prediction.js';
 import blurBackground from './Effects/BlurBackgrond.js';
 import createCanvas from './VideoSetup/CreateCanvas.js';
-
+import loadVideo from './VideoSetup/Load.js';
 //variables
 const video = document.getElementById('video');
 
@@ -31,7 +31,7 @@ const execute = async () => {
         console.log(error);
     }
     //Setup Del Video
-    tracker.video = await setVideo(createVideo() );
+    await loadVideo(createVideo(), tracker );
 
 
     //anadimos al algun elemento html
@@ -43,9 +43,12 @@ const execute = async () => {
         tracker.prediction = await makePredictionPerson(tracker);
         const{data:map} = tracker.prediction;
         tracker.map = tracker.prediction.data
-        //anadimos al html
-        bodyPix.drawBokehEffect(tracker.canvas_1.firstChild, tracker.video, tracker.prediction, 17, 3, false);
-    },1000/60);
+        
+        //Blur Effect
+        //await blurBackground(tracker.canvas_1.firstChild, tracker.video, tracker.prediction, 18, 15,true);
+    
+    
+    },1000/25);
 
 }
 
