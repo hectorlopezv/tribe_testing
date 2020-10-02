@@ -1,7 +1,7 @@
 function createCanvas(option){
     const canvas = document.createElement('canvas');
-    canvas.width = '480px';
-    canvas.height = '640px';
+    canvas.setAttribute('width', '640');
+    canvas.setAttribute('height', '480');
     if(option){
       const container = document.createElement('div');
       container.classList.add('container');

@@ -7,6 +7,8 @@ import makePredictionPerson from './ModelSetup/prediction.js';
 import blurBackground from './Effects/BlurBackgrond.js';
 import createCanvas from './VideoSetup/CreateCanvas.js';
 import loadVideo from './VideoSetup/Load.js';
+import grayScale from './Effects/GrayScale.js';
+
 //variables
 const video = document.getElementById('video');
 
@@ -43,10 +45,13 @@ const execute = async () => {
         tracker.prediction = await makePredictionPerson(tracker);
         const{data:map} = tracker.prediction;
         tracker.map = tracker.prediction.data
-        
         //Blur Effect
         //await blurBackground(tracker.canvas_1.firstChild, tracker.video, tracker.prediction, 18, 15,true);
-    
+        
+        //GrayScale -- Pixel manipulation
+        grayScale(tracker);
+
+        
     
     },1000/25);
 
