@@ -15,6 +15,8 @@ const getImageData = async (videoid= 1, URL, width, height) => {
     await new Promise(r => img.onload=r, img.src=URL);
     
     //resize image to canvas
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(img, 0, 0, img.width, img.height, //source rectangle
                         0,0, width, height);//destination rectangle
 

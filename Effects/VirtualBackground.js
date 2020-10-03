@@ -2,7 +2,7 @@ import getImageData from '../VideoSetup/GetImageData.js';
 import videoImageData from '../VideoSetup/GetVideoData.js';
 
 
-async function virtualBackground(URL, width, height, tracker){
+async function virtualBackground(URL, width, height, tracker, option){
     
     //new canvas
     const canvas = tracker.canvas_1.firstChild;//cremaos un blank array para llenarlo
@@ -34,13 +34,14 @@ async function virtualBackground(URL, width, height, tracker){
                                         videoData[i*4], 
                                         videoData[i*4 +1], 
                                         videoData[i*4 + 2], 
-                                        250
+                                        !option? videoData[i*4 + 3]:0//da la opcion de blur o no
                                     ]
     }
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+    bodyPix.drawMask(canvas, document.querySelector('video'), newImg, 1, 2.5, false);
 
-    //despues pintamos en el canvas original
-    canvas.getContext('2d').globalCompositeOperation = 'destination-in';
-    canvas.getContext('2d').putImageData(newImg, 0, 0);
+    
+    return newImg;
 
     
 
