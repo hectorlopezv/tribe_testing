@@ -5,7 +5,7 @@ async function makePredictionPerson(tracker){
       segmentationThreshold: 0.7
     }
     tracker.prediction = await tracker.net.segmentPerson(tracker.video, config);
-    //console.log(prediction);
+  
     return tracker.prediction; 
   }
 

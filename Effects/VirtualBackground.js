@@ -38,10 +38,12 @@ async function virtualBackground(URL, width, height, tracker, option){
                                     ]
     }
     canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-    bodyPix.drawMask(canvas, document.querySelector('video'), newImg, 1, 2.5, false);
+    const backgroundBlur = 2.8;
+    const virtualBackgroundOverlay = .99;
+    bodyPix.drawMask(canvas, document.querySelector('video'), 
+    newImg, virtualBackgroundOverlay, backgroundBlur, false);
 
-    
-    return newImg;
+
 
     
 

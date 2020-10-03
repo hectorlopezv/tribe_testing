@@ -9,7 +9,7 @@ import createCanvas from './VideoSetup/CreateCanvas.js';
 import loadVideo from './VideoSetup/Load.js';
 import grayScale from './Effects/GrayScale.js';
 import virtualBackground from './Effects/VirtualBackground.js';
-import blur2 from './Effects/blurBack2.js';
+
 //variables
 const video = document.getElementById('video');
 
@@ -30,8 +30,8 @@ const quantBytes = 2;
 const load = async () =>
 {
     try {
+        
         tracker.net = await loadModel(architecture, outputStride, multiplier, quantBytes);
-        console.log(tracker.net);
     } catch (error) {
         console.log(error);
     }
@@ -43,6 +43,7 @@ const load = async () =>
     addVideo(document.querySelector('#main'), tracker.video);
     tracker.canvas_1 = createCanvas(true);
     addVideo(document.querySelector('#main'), tracker.canvas_1);
+    
     execute();
 
 
@@ -53,9 +54,8 @@ load();
 
 
 async function execute() {
+   
     tracker.prediction = await makePredictionPerson(tracker);
-    const{data:map} = tracker.prediction;
-    tracker.map = tracker.prediction.data
     //Blur Effect
     //await blurBackground(tracker.canvas_1.firstChild, tracker.video, tracker.prediction, 18, 15,true);
     
@@ -64,9 +64,10 @@ async function execute() {
     
     //background manipulation
     const URL = './js.jpg';
-    const x = await virtualBackground(URL, tracker.video.width, tracker.video.height, tracker, true);
+    await virtualBackground(URL, tracker.video.width, tracker.video.height, tracker, true);
 
-    // con blur del virtual background tambien
+    //Blur BodyPart
+
     
     
     
