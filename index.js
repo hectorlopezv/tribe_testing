@@ -9,6 +9,9 @@ import createCanvas from './VideoSetup/CreateCanvas.js';
 import loadVideo from './VideoSetup/Load.js';
 import grayScale from './Effects/GrayScale.js';
 import virtualBackground from './Effects/VirtualBackground.js';
+import predictionBodyParts from './ModelSetup/predictionBodyPartsPerson.js';
+import predictionBodyPartsMulti from './ModelSetup/predictionBodyPartsPersonMulti.js';
+import blurBodyPart from './Effects/BlurBodyPart.js';
 
 //variables
 const video = document.getElementById('video');
@@ -55,7 +58,15 @@ load();
 
 async function execute() {
    
-    tracker.prediction = await makePredictionPerson(tracker);
+    //prediction Person
+    //await makePredictionPerson(tracker);
+    
+    //prediction BodyParts Person
+    await predictionBodyParts(tracker);
+
+    //blur Body parts
+    await blurBodyPart(tracker, [10, 11, 13, 12], 20, 5);
+    
     //Blur Effect
     //await blurBackground(tracker.canvas_1.firstChild, tracker.video, tracker.prediction, 18, 15,true);
     
@@ -63,10 +74,11 @@ async function execute() {
     //grayScale(tracker);
     
     //background manipulation
-    const URL = './js.jpg';
-    await virtualBackground(URL, tracker.video.width, tracker.video.height, tracker, true);
+    //const URL = './js.jpg';
+    //await virtualBackground(URL, tracker.video.width, tracker.video.height, tracker, true);
 
     //Blur BodyPart
+
 
     
     

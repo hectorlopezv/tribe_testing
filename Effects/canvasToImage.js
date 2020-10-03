@@ -1,6 +1,6 @@
 
 const canvasToImage = () => {
-    return (  );
+    //possible
 }
  
 export default canvasToImage;
