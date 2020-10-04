@@ -1,11 +1,12 @@
 import videoImageData from '../VideoSetup/GetVideoData.js';
 import getImageData from '../VideoSetup/GetImageData.js';
 
-const changeBodyPartImage = async (tracker, width, height, URL) => {
+const changeBodyPartImage = async (tracker, width, height, URL, option) => {
     
     //Prediction
     const {data:map} = tracker.prediction_bodyPartsPerson;
     const pixelLength = map.length;
+    console.log(tracker.prediction_bodyPartsPerson);
     
     //new canvas
     const canvas = tracker.canvas_1.firstChild;
@@ -65,15 +66,19 @@ const changeBodyPartImage = async (tracker, width, height, URL) => {
                                         videoData[i*4 + 3]//da la opcion de blur o no
                                     ]
     }
+    if (option)
+    {
+        canvas.getContext('2d').putImageData(newImg, 0, 0);
+    }
+    else{
 
-    canvas.getContext('2d').putImageData(newImg, 0, 0);
-    /*
-    const coloredPartImage = bodyPix.toColoredPartMask
-    (tracker.prediction_bodyPartsPerson, rainbow);
+        const coloredPartImage = bodyPix.toColoredPartMask
+        (tracker.prediction_bodyPartsPerson, rainbow);
     
-    bodyPix.drawMask(
-        canvas, tracker.video, coloredPartImage, .7, 0, true);
-    */
+        bodyPix.drawMask(
+            canvas, tracker.video, coloredPartImage, .7, 0, true);
+    }
+    
 }
  
 export default changeBodyPartImage;

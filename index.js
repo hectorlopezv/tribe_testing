@@ -82,8 +82,9 @@ async function execute() {
     //Canvas To Image(donwload) -- type, quality0-1, nameFile, canvas
     //canvasToImage('image/jpeg', 1, 'hector', tracker.canvas_1.firstChild);
 
+    //change body part for a Background
     changeBodyPartImage(tracker, tracker.canvas_1.firstChild.width, 
-        tracker.canvas_1.firstChild.height, URL);
+        tracker.canvas_1.firstChild.height, URL, true);
 
 
 
