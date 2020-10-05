@@ -64,7 +64,7 @@ async function execute() {
     //await makePredictionPerson(tracker);
     
     //prediction BodyParts Person
-    await predictionBodyParts(tracker);
+    //await predictionBodyParts(tracker);
 
     //blur Body parts
     //await blurBodyPart(tracker, [10, 11, 13, 12,2,3,4,5], 20, 5);
@@ -76,15 +76,15 @@ async function execute() {
     //grayScale(tracker);
     
     //background manipulation
-    const URL = './js.jpg';
+    //const URL = './js.jpg';
     //await virtualBackground(URL, tracker.video.width, tracker.video.height, tracker, true);
 
     //Canvas To Image(donwload) -- type, quality0-1, nameFile, canvas
     //canvasToImage('image/jpeg', 1, 'hector', tracker.canvas_1.firstChild);
 
     //change body part for a Background
-    changeBodyPartImage(tracker, tracker.canvas_1.firstChild.width, 
-        tracker.canvas_1.firstChild.height, URL, true);
+    //changeBodyPartImage(tracker, tracker.canvas_1.firstChild.width, 
+    //tracker.canvas_1.firstChild.height, URL, true);
 
 
 

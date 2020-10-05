@@ -5,6 +5,7 @@ class Tracker {
             this.videos = [];
             this.video = 'video';
             this.prediction = 'x2';
+            this.canvas_1 = 'x3';
             Tracker.instance = this;
         }
 
