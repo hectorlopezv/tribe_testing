@@ -8,6 +8,6 @@ async function loadVideo(video, tracker) {
        throw e;
     }
     //"comenzamos" el stream para que se carge y podamos a empezar a aplica prediciones
-    tracker.video.play();
+    await tracker.video.play();
   }
   export default loadVideo;

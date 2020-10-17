@@ -9,6 +9,7 @@ async function virtualBackground(URL, width, height, tracker, option){
     const newImg = canvas.getContext('2d').createImageData(canvas.width, canvas.height);//create blank new ImageData
     const newImgData = newImg.data;
 
+    
     //prediction
     const {data:map} = tracker.prediction;
     const pixelLength = map.length;
