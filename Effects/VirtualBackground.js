@@ -19,7 +19,7 @@ async function virtualBackground(URL, width, height, tracker, option){
     
     //imageData
     const {data: imgData} = await getImageData(1, URL, width, height);
-    
+
     //es los pixels de no persona dibujar La imagen en si
     for (let i = 0; i < pixelLength; i++) {
         //los pixels de la imagen si es no es persona
@@ -35,11 +35,11 @@ async function virtualBackground(URL, width, height, tracker, option){
                                         videoData[i*4], 
                                         videoData[i*4 +1], 
                                         videoData[i*4 + 2], 
-                                        !option? videoData[i*4 + 3]:0//da la opcion de blur o no
+                                        255//!option? videoData[i*4 + 3]:0//da la opcion de blur o no
                                     ]
     }
     canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-    const backgroundBlur = 3;
+    const backgroundBlur = 0;
     const virtualBackgroundOverlay = 1;
     bodyPix.drawMask(canvas, document.querySelector('video'), 
     newImg, virtualBackgroundOverlay, backgroundBlur, false);
