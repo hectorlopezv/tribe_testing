@@ -31,22 +31,18 @@ async function virtualBackground(URL, width, height, tracker, option){
             newImgData[i*4 +1],
             newImgData[i*4 + 2], 
             newImgData[i*4 + 3]
-        ] = !map[i]   ? [r, g, b, 255] : [
+        ] = !map[i]   ? [r, g, b, 250] : [
                                         videoData[i*4], 
                                         videoData[i*4 +1], 
                                         videoData[i*4 + 2], 
-                                        255//!option? videoData[i*4 + 3]:0//da la opcion de blur o no
+                                        0//!option? videoData[i*4 + 3]:0//da la opcion de blur o no
                                     ]
     }
     canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-    const backgroundBlur = 0;
+    const backgroundBlur = 2;
     const virtualBackgroundOverlay = 1;
     bodyPix.drawMask(canvas, document.querySelector('video'), 
-    newImg, virtualBackgroundOverlay, backgroundBlur, false);
-
-
-
-    
+    newImg, virtualBackgroundOverlay, backgroundBlur, false);    
 
 }
 

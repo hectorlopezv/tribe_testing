@@ -1,3 +1,5 @@
+
+/*
 import getDevices from '/VideoSetup/GetDevices.js';
 import loadModel from '/ModelSetup/loadModel.js';
 import Tracker from './Singleton/Singleton.js';
@@ -17,33 +19,268 @@ import changeBodyPartImage from './Effects/changeBodyPartForImage.js';
 import cpuBlur from './Effects/BlurImage.js';
 import getImageData from './VideoSetup/GetImageData.js';
 import videoImageData from './VideoSetup/GetVideoData.js';
-//variables
-const video = document.getElementById('video');
+*/
 
 
 //comprovacion si soporta y tiene video
+/*
 if (getDevices() < 1){
     console.log('algun tipo de accion.')
 }
+*/
 //caragamos el singleton que tendra todo relevante
-const tracker = new Tracker();
+
+/*const tracker = new Tracker();*/
+
+//lo que le pedimos al singleton
+//Stream - captureStream fun -> return MediaStream Object, LoadVideo fun -> Stream Object, SetVideo , ask Permision from MediaDevices for video fun -> return Media stream Object
+//clase Prediction - Segmentation Person / Segmentation MultiPerson funciones , LoadModel-> return loadedModel,  run-> return prediction /
+//Config del Modelo -  JsonObject {arch: 'ResNet o MobileNet, outputStride:lower is better 8,16,32:, multiplier: higher better acurracy 1,0.75,0.50, quantBytes:1,2,4 higher is better, multiplier: 1,.75,.50 only mobile}
+//AnimationFrame -> execute loop for canvas then use Capture stream to repaint the canvas
+//getImagedata - GetVideoData
+//Create img Tag
+//atrr video.width == canvas.width, video.height == canvas.height
+
+
+
+//Class Video_Tracking
+class VideoTracking {
+    constructor(width, height, model_config, config_constrains, config_prediction ){
+        /*Dimensions of the input video width, height*/
+        /* modelConfig = architecture: 'ResNet', 'mobileNetV1', outputStride: 8,16,32, multiplier: 1,0.75,0.50, quantBytes: 1,.75,.50 only mobile*/
+        /* config_constrains = audio: audio_config, video: video_config*/
+        /*config_prediction = flipHorizontal: true, internalResolution: 'high', segmentationThreshold: 0.7*/
+        /*config_prediction (additional for MultiPerson) = maxDetections: 10,scoreThreshold: 0.2, nmsRadius: 20, minKeypointScore: 0.3, refineSteps: 10*/
+        this.loadModel = this.load_model(model_config);/*Load Model*/
+        
+        this.VideoElement = this.createVideo(); /*Video Element*/
+        this.videoStream = this.load_Video_stream(config_constrains);/*videoStream Media Stream*/
+        this.prediction = new Prediction(config_prediction, loadModel);/*load Prediction*/
+        this.canvasElement = this.createCanvas(width, height);/*Create canvas to Write to setting some dimensions*/
+
+
+    }
+
+
+    addVideo(HTMLelement, videoElement) {
+        HTMLelement.appendChild(videoElement);
+      }
+
+    run_prediction(type_prediciton){
+        /*Make Prediction on model and config_prediction....... this.prediction.make_prediction(type_prediciton, HTMLVideoElement)*/ 
+        return this.prediction.make_prediction(type_prediciton, this.VideoElement);
+    }
+
+    execute_effect_test(){
+
+        const prediction = this.run_prediction(1);
+        //async effect_blur_background(canvasElement, image, personSegmentation,  config){
+        /*canvasElement where to draw the results*/
+        /* config  = image--> imageData|HTMLimage|HTMLVideo, PersonSegmentation --> Prediction, edgeBlurAmount --> how many pixels to blur on the edge bettwen person and background, flipHorizontal --> flip image or not*/
+        const config = {backgroundBlurAmount: 5, edgeBlurAmount: 5, flipHorizontal: false}
+        this.prediction.effect_blur_background(this.canvasElement, this.videoElement, prediction, config);
+
+        window.requestAnimationFrame(this.execute_effect_test);
+
+
+    }
+    
+
+    load_canvas_test(){
+        this.addVideo(document.querySelector('#main'), this.videoElement);
+        const canvas_1 = createCanvas(true);
+        this.addVideo(document.querySelector('#main'), canvas_1);
+        const img_test = document.createElement('img'); // Use DOM HTMLImageElement
+        img_test.src = './js_blur.jpg';
+        img_test.alt = 'alt text';
+        img_test.width = 640;
+        img_test.height = 480;
+        
+    }
+
+    async load_model(model_config){
+        return  bodyPix.load(model_config);
+    }
+
+    async load_Video_stream(config_constrains){
+        /* config_constrains = audio: audio_config, video: video_config*/
+        /*Dimensions for video*/
+        /*HTMLvideoElement*/
+     
+        const stream = await navigator.mediaDevices.getUserMedia(config_constrains);/*MediaStream Video*/
+        this.VideoElement.srcObject = stream;/*SetVideo Stream Source*/ /*MediaStream Video*/
+
+        //Retornamos promesa para forzar que espere y retorne
+        this.PromiseCreator();
+
+        return stream;/*Return Stream VideoElement*/
+    }
+    
+    createVideo(){
+        /*Create Video de donde sacaramos la informacion para hacer la prediccion y posteriormente dibujar el canvas*/
+        const video = document.createElement('video');
+        video.setAttribute('autoplay','false');
+        //video.setAttribute('playsinline', 'false');
+        //video.setAttribute('controls', 'false');
+        //video.style.visibility = 'visible';
+        video.style.display = 'none';
+        return video;
+    }
+
+    createCanvas(option = false, width, height){
+        /*Option --> True - False*/
+        const canvas = document.createElement('canvas');
+        canvas.setAttribute('width', '640');
+        canvas.setAttribute('height', '480');
+        if(option){/* True return canvas inside a DIV*/
+          const container = document.createElement('div');
+          container.classList.add('container');
+          container.appendChild(canvas); //container > canvas
+          canvas.setAttribute('autoplay','false');
+          //canvas.setAttribute('playsinline', 'false');
+          //canvas.setAttribute('controls', 'false');
+          return container;
+        }
+
+        return canvas
+      }
+    
+
+
+    PromiseCreator = () => { /* Return Promise VideoElement when all data is loaded and ready  with certains dimensions*/
+        return new Promise((resolve, reject) => {
+            this.VideoElement.onloadedmetadata = () => {
+                this.VideoElement.width = this.VideoElement.videoWidth;
+                this.VideoElement.height = this.VideoElement.videoHeight;
+            resolve(this.VideoElement);
+          };
+        });
+      }
+
+
+}
+
+
+
+
+//Class Prediction
+class Prediction {
+   /*config = flipHorizontal: true, internalResolution: 'high', segmentationThreshold: 0.7*/
+   /*config (additional for MultiPerson) = maxDetections: 10,scoreThreshold: 0.2, nmsRadius: 20, minKeypointScore: 0.3, refineSteps: 10*/
+   /* type_prediciton = String 'Person', 'MultiPerson'*/ 
+    constructor(config, loaded_model){
+        /*Common Parameters Person/MultiPerson*/
+        this.flipHorizontal = config.flipHorizontal;
+        this.internalResolution = config.internalResolution;
+        this.segmentationThreshold = config.segmentationThreshold;
+        this.loaded_model = loaded_model;
+        console.log(loaded_model);
+
+        /*MultiPerson Addditional Parameters*/
+        this.maxDetections = config.maxDetections;
+        this.scoreThreshold = config.scoreThreshold;
+        this.nmsRadius = config.nmsRadius;
+        this.minKeypointScore = config.minKeypointScore;
+        this.refineSteps = config.refineSteps;
+    }
+
+    async make_prediction(type_prediciton, HTMLVideoElement){ /* Returns unit8Campled for every pixel in the Ho*Wo Element array 0: Backgrounnd : 1:Person*/
+        /*type_prediciton 1 --> Person, 2 --> MultiPerson, 3 --> BodyParts Prediciton/
+        /*HTMLVideoElement --> ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement*/
+        if (type_prediciton == 1){
+            /*Opciones sacar datos de la imagen / mandar directamente el HTML tag*/
+            const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold}
+            console.log(this.loaded_model);
+            const prediction = await this.loaded_model.segmentPerson(HTMLVideoElement, config);
+            return prediction;
+        }
+        else if (type_prediciton == 2){
+            /*Opciones sacar datos de la imagen / mandar directamente el HTML tag*/
+            const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold, 
+                maxDetections: this.maxDetections, scoreThreshold: this.scoreThreshold, nmsRadius: this.nmsRadius, minKeypointScore: this.minKeypointScore, refineSteps: this.refineSteps}
+            const prediction = await this.loaded_model.segmentMultiPerson(HTMLVideoElement, config);
+            return prediction;
+        }
+        else
+        {    /*Opciones sacar datos de la imagen / mandar directamente el HTML tag*/
+            const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold}
+            const prediction  = await this.loaded_model.segmentPersonParts(HTMLVideoElement, config);
+            return prediction;
+
+        }
+    }
+
+    async effect_blur_background(canvasElement, image, personSegmentation,  config){
+        /*canvasElement where to draw the results*/
+        /* config  = image--> imageData|HTMLimage|HTMLVideo, PersonSegmentation --> Prediction, edgeBlurAmount --> how many pixels to blur on the edge bettwen person and background, flipHorizontal --> flip image or not*/
+
+        const {backgroundBlurAmount, edgeBlurAmount, flipHorizontal} = config; 
+    
+        await bodyPix.drawBokehEffect(canvasElement, image, personSegmentation, backgroundBlurAmount, edgeBlurAmount, flipHorizontal);
+    }
+
+    
+}
+
+
+
+
+
+//Testing New Classes
+    //constructor(width, height, model_config, config_constrains, config_prediction )
+    /*Dimensions of the input video width, height*/
+    /* modelConfig = architecture: 'ResNet', 'mobileNetV1', outputStride: 8,16,32, multiplier: 1,0.75,0.50, quantBytes: 1,.75,.50 only mobile*/
+    /* config_constrains = audio: audio_config, video: video_config*/
+    /*config_prediction = flipHorizontal: true, internalResolution: 'high', segmentationThreshold: 0.7*/
+    /*config_prediction (additional for MultiPerson) = maxDetections: 10,scoreThreshold: 0.2, nmsRadius: 20, minKeypointScore: 0.3, refineSteps: 10*/
+const model_config = { architecture: 'MobileNetV1', outputStride: 16, multiplier: 0.75, quantBytes: 2}
+const config_constrains = {audio: false, video: true}
+const config_prediction = {  flipHorizontal: false, internalResolution: 'high', segmentationThreshold: 0.7}
+const Tracking = new VideoTracking(640, 480, model_config, config_constrains, config_prediction);
+const prediction = Tracking.run_prediction(1);
+console.log(prediction);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //cargamos el modelo...
 const architecture = 'MobileNetV1';
 const outputStride = 16; 
-const multiplier = 0.75;
-const quantBytes = 2;
+const multiplier = 1;
+const quantBytes = 4;
 let img_test = 0;
+
+document.querySelector('#btn').onclick = () => {
+    for (let index = 0; index < 50; index++) {
+        console.log('ESTA aqui')
+        
+    }
+}
+
 const load = async () =>
 {
     try {
         
-        tracker.net = await loadModel(architecture, outputStride, multiplier, quantBytes);
+        tracker.net = await loadModel(architecture, outputStride, multiplier, quantBytes);// Classe prediction
     } catch (error) {
         console.log(error);
     }
     //Setup Del Video
-    await loadVideo(createVideo(), tracker );
+    await loadVideo(createVideo(), tracker );//Stream Object
 
 
     //anadimos al algun elemento html
@@ -66,15 +303,12 @@ const load = async () =>
 
 
 }
-load();
-
-
-
+//load();
 
 async function execute() {
    
     //prediction Person
-    await makePredictionPerson(tracker);
+    //await makePredictionPerson(tracker);
     
     
   
@@ -91,8 +325,8 @@ async function execute() {
     //grayScale(tracker);
     
     //background manipulation
-    const URL = './js.jpg';
-    await virtualBackground(URL, tracker.video.width, tracker.video.height, tracker, true);
+    //const URL = './js.jpg';
+    //await virtualBackground(URL, tracker.video.width, tracker.video.height, tracker, true);
 
     //Canvas To Image(donwload) -- type, quality0-1, nameFile, canvas
     //canvasToImage('image/jpeg', 1, 'hector', tracker.canvas_1.firstChild);
@@ -186,8 +420,10 @@ async function execute() {
      
     
     
-    window.requestAnimationFrame(execute)
+    //window.requestAnimationFrame(execute)
 }
+
+
 
 
 
