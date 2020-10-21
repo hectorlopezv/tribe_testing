@@ -55,7 +55,7 @@ class VideoTracking {
         
         this.VideoElement = this.createVideo(); /*Video Element*/
         this.videoStream = this.load_Video_stream(config_constrains);/*videoStream Media Stream*/
-        this.prediction = new Prediction(config_prediction, loadModel);/*load Prediction*/
+        this.prediction = new Prediction(config_prediction, this.loadModel);/*load Prediction*/
         this.canvasElement = this.createCanvas(width, height);/*Create canvas to Write to setting some dimensions*/
 
 
