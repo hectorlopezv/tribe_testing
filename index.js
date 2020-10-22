@@ -1,5 +1,5 @@
 
-/*
+
 import getDevices from '/VideoSetup/GetDevices.js';
 import loadModel from '/ModelSetup/loadModel.js';
 import Tracker from './Singleton/Singleton.js';
@@ -19,18 +19,18 @@ import changeBodyPartImage from './Effects/changeBodyPartForImage.js';
 import cpuBlur from './Effects/BlurImage.js';
 import getImageData from './VideoSetup/GetImageData.js';
 import videoImageData from './VideoSetup/GetVideoData.js';
-*/
+
 
 
 //comprovacion si soporta y tiene video
-/*
+
 if (getDevices() < 1){
     console.log('algun tipo de accion.')
 }
-*/
+
 //caragamos el singleton que tendra todo relevante
 
-/*const tracker = new Tracker();*/
+const tracker = new Tracker();
 
 //lo que le pedimos al singleton
 //Stream - captureStream fun -> return MediaStream Object, LoadVideo fun -> Stream Object, SetVideo , ask Permision from MediaDevices for video fun -> return Media stream Object
@@ -51,25 +51,30 @@ class VideoTracking {
         /* config_constrains = audio: audio_config, video: video_config*/
         /*config_prediction = flipHorizontal: true, internalResolution: 'high', segmentationThreshold: 0.7*/
         /*config_prediction (additional for MultiPerson) = maxDetections: 10,scoreThreshold: 0.2, nmsRadius: 20, minKeypointScore: 0.3, refineSteps: 10*/
-        this.loadModel = this.load_model(model_config);/*Load Model*/
+        
+        /*Permissions and SetUp Video*/
+        
+        //this.VideoElement = this.createVideo(); /*Video Element*/
+        //this.videoStream = this.load_Video_stream(config_constrains);/*videoStream Media Stream*/
+        //this.canvasElement = this.createCanvas(width, height);/*Create canvas to Write to setting some dimensions*/
+        
+        //this.model_config = model_config;
+        //this.config_prediction = config_prediction;
         
         this.VideoElement = this.createVideo(); /*Video Element*/
-        this.videoStream = this.load_Video_stream(config_constrains);/*videoStream Media Stream*/
-        this.prediction = new Prediction(config_prediction, this.loadModel);/*load Prediction*/
-        this.canvasElement = this.createCanvas(width, height);/*Create canvas to Write to setting some dimensions*/
-
-
+        this.canvasElement = this.createCanvas(false, width, height);/*Create canvas to Write to setting some dimensions*/
+        this.model =  this._load_model(model_config);/*Promise Containtng Model*/
+        this.videoStream =  this.load_Video_stream(config_constrains);/*Promise Containing Video MediaStream*/
+        this.predictionModel = new Prediction(config_prediction, this.model, this.videoStream, this.canvasElement);
     }
 
-
-    addVideo(HTMLelement, videoElement) {
+    
+    static addVideo(HTMLelement, videoElement) {
         HTMLelement.appendChild(videoElement);
       }
+    
+    
 
-    run_prediction(type_prediciton){
-        /*Make Prediction on model and config_prediction....... this.prediction.make_prediction(type_prediciton, HTMLVideoElement)*/ 
-        return this.prediction.make_prediction(type_prediciton, this.VideoElement);
-    }
 
     execute_effect_test(){
 
@@ -95,12 +100,13 @@ class VideoTracking {
         img_test.alt = 'alt text';
         img_test.width = 640;
         img_test.height = 480;
-        
     }
 
-    async load_model(model_config){
+     _load_model(model_config){
         return  bodyPix.load(model_config);
     }
+
+
 
     async load_Video_stream(config_constrains){
         /* config_constrains = audio: audio_config, video: video_config*/
@@ -109,11 +115,12 @@ class VideoTracking {
      
         const stream = await navigator.mediaDevices.getUserMedia(config_constrains);/*MediaStream Video*/
         this.VideoElement.srcObject = stream;/*SetVideo Stream Source*/ /*MediaStream Video*/
+        this.video_stream = stream;
 
         //Retornamos promesa para forzar que espere y retorne
-        this.PromiseCreator();
+        return this.PromiseCreator();
 
-        return stream;/*Return Stream VideoElement*/
+        //return stream;/*Return Stream VideoElement*/
     }
     
     createVideo(){
@@ -147,7 +154,7 @@ class VideoTracking {
     
 
 
-    PromiseCreator = () => { /* Return Promise VideoElement when all data is loaded and ready  with certains dimensions*/
+    PromiseCreator ()  { /* Return Promise VideoElement when all data is loaded and ready  with certains dimensions*/
         return new Promise((resolve, reject) => {
             this.VideoElement.onloadedmetadata = () => {
                 this.VideoElement.width = this.VideoElement.videoWidth;
@@ -168,13 +175,14 @@ class Prediction {
    /*config = flipHorizontal: true, internalResolution: 'high', segmentationThreshold: 0.7*/
    /*config (additional for MultiPerson) = maxDetections: 10,scoreThreshold: 0.2, nmsRadius: 20, minKeypointScore: 0.3, refineSteps: 10*/
    /* type_prediciton = String 'Person', 'MultiPerson'*/ 
-    constructor(config, loaded_model){
+    constructor(config, loaded_model, videoMediaStream, canvasElement){
         /*Common Parameters Person/MultiPerson*/
         this.flipHorizontal = config.flipHorizontal;
         this.internalResolution = config.internalResolution;
         this.segmentationThreshold = config.segmentationThreshold;
-        this.loaded_model = loaded_model;
-        console.log(loaded_model);
+        this.loaded_model = loaded_model;/*Promise of Model*/
+        this.videoMediaStream = videoMediaStream;
+        this.canvasElement = canvasElement;
 
         /*MultiPerson Addditional Parameters*/
         this.maxDetections = config.maxDetections;
@@ -184,30 +192,31 @@ class Prediction {
         this.refineSteps = config.refineSteps;
     }
 
-    async make_prediction(type_prediciton, HTMLVideoElement){ /* Returns unit8Campled for every pixel in the Ho*Wo Element array 0: Backgrounnd : 1:Person*/
+    async make_prediction_load(){ /* Returns unit8Campled for every pixel in the Ho*Wo Element array 0: Backgrounnd : 1:Person*/
         /*type_prediciton 1 --> Person, 2 --> MultiPerson, 3 --> BodyParts Prediciton/
         /*HTMLVideoElement --> ImageData|HTMLImageElement|HTMLCanvasElement|HTMLVideoElement*/
-        if (type_prediciton == 1){
-            /*Opciones sacar datos de la imagen / mandar directamente el HTML tag*/
-            const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold}
-            console.log(this.loaded_model);
-            const prediction = await this.loaded_model.segmentPerson(HTMLVideoElement, config);
-            return prediction;
-        }
-        else if (type_prediciton == 2){
-            /*Opciones sacar datos de la imagen / mandar directamente el HTML tag*/
-            const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold, 
-                maxDetections: this.maxDetections, scoreThreshold: this.scoreThreshold, nmsRadius: this.nmsRadius, minKeypointScore: this.minKeypointScore, refineSteps: this.refineSteps}
-            const prediction = await this.loaded_model.segmentMultiPerson(HTMLVideoElement, config);
-            return prediction;
-        }
-        else
-        {    /*Opciones sacar datos de la imagen / mandar directamente el HTML tag*/
-            const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold}
-            const prediction  = await this.loaded_model.segmentPersonParts(HTMLVideoElement, config);
-            return prediction;
+        let model_prediction;
+        if (typeof this.loaded_video === 'undefined'){/* Load one time video MediaStream if was not loaded yet*/
+            this.loaded_video = await this.videoMediaStream;
+            this.model_prediction = await this.loaded_model;/*cargando el model*/
+            console.log(this.model_prediction);
+
+            /*add video to HTML*/
+            //VideoTracking.addVideo(document.querySelector('body'), this.loaded_video );// No es necesario anadir el HTML.... xd
+            /*Strat Capturing Canvas*/
+           
+
 
         }
+
+
+
+    }
+
+    request_canvas_MediaStream(fps){/*Give canvas Media stream */
+        this.canvas_MediaStream = this.canvasElement.captureStream(fps);
+        window.canvas_stream = this.canvas_MediaStream;
+        return this.canvas_MediaStream;
     }
 
     async effect_blur_background(canvasElement, image, personSegmentation,  config){
@@ -215,8 +224,56 @@ class Prediction {
         /* config  = image--> imageData|HTMLimage|HTMLVideo, PersonSegmentation --> Prediction, edgeBlurAmount --> how many pixels to blur on the edge bettwen person and background, flipHorizontal --> flip image or not*/
 
         const {backgroundBlurAmount, edgeBlurAmount, flipHorizontal} = config; 
-    
         await bodyPix.drawBokehEffect(canvasElement, image, personSegmentation, backgroundBlurAmount, edgeBlurAmount, flipHorizontal);
+    }
+    stopAnimationLoop(){
+        /*Working*/
+
+    }
+
+    async loop_(type_prediciton, canvasElement, config){
+        //effect_function, parameters_function
+ 
+        const prediction = await this.make_prediction_load();  
+        const loaded_video = this.loaded_video;
+        const model_prediction = this.model_prediction;
+
+ 
+        /*
+        else if (type_prediciton == 2){
+            //*Opciones sacar datos de la imagen / mandar directamente el HTML tag
+            const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold, 
+                maxDetections: this.maxDetections, scoreThreshold: this.scoreThreshold, nmsRadius: this.nmsRadius, minKeypointScore: this.minKeypointScore, refineSteps: this.refineSteps}
+            const prediction = await this.loaded_model.segmentMultiPerson(HTMLVideoElement, config);
+            return prediction;
+        }
+        else
+        {    //*Opciones sacar datos de la imagen / mandar directamente el HTML tag
+            const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold}
+            const prediction  = await this.loaded_model.segmentPersonParts(HTMLVideoElement, config);
+            return prediction;
+
+        }
+        */
+
+
+        VideoTracking.addVideo(document.querySelector('body'), canvasElement);// No es necesario anadir el HTML.... xd
+
+     /*Animation Loop*/
+     const loopping = async () => {/*Loop for animation*/
+        if (type_prediciton == 1){
+            /*Opciones sacar datos de la imagen / mandar directamente el HTML tag*/
+            //const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold}
+            
+            
+            const prediction_frame = await model_prediction.segmentPerson(loaded_video, config);
+     
+            this.effect_blur_background(canvasElement, this.loaded_video, prediction_frame,  config);
+        }
+        
+        window.requestAnimationFrame(loopping);
+       }
+     loopping();
     }
 
     
@@ -236,9 +293,28 @@ class Prediction {
 const model_config = { architecture: 'MobileNetV1', outputStride: 16, multiplier: 0.75, quantBytes: 2}
 const config_constrains = {audio: false, video: true}
 const config_prediction = {  flipHorizontal: false, internalResolution: 'high', segmentationThreshold: 0.7}
+const config_effect_bokek = {backgroundBlurAmount: 5, edgeBlurAmount: 5, flipHorizontal: false}
 const Tracking = new VideoTracking(640, 480, model_config, config_constrains, config_prediction);
-const prediction = Tracking.run_prediction(1);
-console.log(prediction);
+
+
+console.log(Tracking.model);
+console.log(Tracking.predictionModel);/* Run Prediciont with A then....*/
+
+
+//Tracking.predictionModel.
+Tracking.predictionModel.loop_(1, Tracking.canvasElement,  config_effect_bokek, Tracking.VideoElement);
+const test = Tracking.predictionModel.request_canvas_MediaStream(25);
+console.log(test);
+//Falta el Loop
+
+
+
+
+
+
+
+//const prediction = Tracking.run_prediction(1);
+//console.log(prediction);
 
 
 
@@ -308,7 +384,7 @@ const load = async () =>
 async function execute() {
    
     //prediction Person
-    //await makePredictionPerson(tracker);
+    await makePredictionPerson(tracker);
     
     
   
