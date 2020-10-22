@@ -204,9 +204,6 @@ class Prediction {
             /*add video to HTML*/
             //VideoTracking.addVideo(document.querySelector('body'), this.loaded_video );// No es necesario anadir el HTML.... xd
             /*Strat Capturing Canvas*/
-           
-
-
         }
 
 
