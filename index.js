@@ -231,7 +231,7 @@ class Prediction {
         await this.virtualBackground_(personSegmentation, canvasElement, videoElement, config);
     }
 
-     async blurBodyPart(canvasElement, videoElement, personSegmentationParts,  config ) {
+     async blurBodyPart_(canvasElement, videoElement, personSegmentationParts,  config ) {
 
         /*Reference of Body Parts*/
         const parts = {
@@ -261,9 +261,8 @@ class Prediction {
             'right_foot': 23
         }
     
-        const {backgroundBlurAmount, edgeBlurAmount, flipHorizontal, bodyParts } = config;
-        const faceBodyPartIdsToBlur = [...bodyParts];
-    
+        const {backgroundBlurAmount, edgeBlurAmount, flipHorizontal, faceBodyPartIdsToBlur} = config;
+
         await bodyPix.blurBodyPart(
             canvasElement, videoElement, personSegmentationParts, faceBodyPartIdsToBlur,
             backgroundBlurAmount, edgeBlurAmount, flipHorizontal);
@@ -328,34 +327,29 @@ class Prediction {
                 //const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold}
                 const prediction_frame = await model_prediction.segmentPerson(loaded_video, config);
                 this.effect_blur_background(canvasElement, this.loaded_video, prediction_frame,  config);
+                canvasElement.getContext('2d').clearRect(0, 0, canvasElement.width, canvasElement.height);
             }
 
             else if (type_prediciton === 2){/*Virtual Background - PersonSegmentation*/
                 
                 const prediction_frame = await model_prediction.segmentPerson(loaded_video, config);     
                 this.virtual_background(canvasElement, this.loaded_video, prediction_frame,  config);
+                canvasElement.getContext('2d').clearRect(0, 0, canvasElement.width, canvasElement.height);
             }
 
             else if(type_prediciton === 3){/*Gray SCale - PersonSegmentation*/
                 
                 const prediction_frame = await model_prediction.segmentPerson(loaded_video, config);     
                 this.grayScale(canvasElement, this.loaded_video, prediction_frame, config);
+                canvasElement.getContext('2d').clearRect(0, 0, canvasElement.width, canvasElement.height);
             }
 
             else if(type_prediciton === 4){/*Blur Body PARTS - PersonSegmentationPARTS*/
-                console.log(config);
-                //const prediction_frameParts = await model_prediction.segmentPersonParts(loaded_video, config); 
-                /*
-                const config = {
-                    flipHorizontal: true,
-                    internalResolution: 'high',
-                    segmentationThreshold: 0.7
-                  }
-                */
-                //this. blurBodyPart(canvasElement, this.loaded_video, prediction_frameParts, config ) 
+                const prediction_frameParts = await model_prediction.segmentPersonParts(loaded_video, config); 
+                this.blurBodyPart_(canvasElement, this.loaded_video, prediction_frameParts, config);
             }
             /*Cleaning canvas*/
-             canvasElement.getContext('2d').clearRect(0, 0, canvasElement.width, canvasElement.height);
+            
 
             if(this.stop){
                 /*remove canvas If visible in the DOM*/
@@ -394,7 +388,7 @@ const config_effect_bokek = {backgroundBlurAmount: 5, edgeBlurAmount: 5, ...effe
 
 const config_virtual_background = {backgroundBlurAmount: 1, edgeBlurAmount: 1,  URL: './js.jpg', ...effect_config_precission};
 const config_greyScale = {...effect_config_precission};
-const config_blur_body_part = { backgroundBlurAmount: 1, edgeBlurAmount: 5, bodyParts: [0, 1], ...effect_config_precission };
+const config_blur_body_part = { backgroundBlurAmount: 10, edgeBlurAmount: 5, faceBodyPartIdsToBlur: [0, 1], ...effect_config_precission };
 
 
 /*Objecto Tracker*/
@@ -417,7 +411,7 @@ const Tracking = new VideoTracking(640, 480, model_config, config_constrains, ef
 
 
 //Implementando4 ... Blur BodyParts - PersonSegmentationParts
-//Tracking.predictionModel.loop_(4, Tracking.canvasElement,  config_blur_body_part);
+Tracking.predictionModel.loop_(4, Tracking.canvasElement,  config_blur_body_part);
 
 
 
