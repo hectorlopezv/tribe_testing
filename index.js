@@ -10,7 +10,8 @@ import blurBackground from './Effects/BlurBackgrond.js';
 import createCanvas from './VideoSetup/CreateCanvas.js';
 import loadVideo from './VideoSetup/Load.js';
 import grayScale from './Effects/GrayScale.js';
-import virtualBackground from './Effects/VirtualBackground.js';
+//import virtualBackground from './Effects/VirtualBackground.js';
+import virtualBackground_ from './Effects/virtual.js';
 import predictionBodyParts from './ModelSetup/predictionBodyPartsPerson.js';
 import predictionBodyPartsMulti from './ModelSetup/predictionBodyPartsPersonMulti.js';
 import blurBodyPart from './Effects/BlurBodyPart.js';
@@ -190,6 +191,9 @@ class Prediction {
         this.nmsRadius = config.nmsRadius;
         this.minKeypointScore = config.minKeypointScore;
         this.refineSteps = config.refineSteps;
+
+
+        this.stop = false;/*Stop Animation Loop*/
     }
 
     async make_prediction_load(){ /* Returns unit8Campled for every pixel in the Ho*Wo Element array 0: Backgrounnd : 1:Person*/
@@ -199,7 +203,7 @@ class Prediction {
         if (typeof this.loaded_video === 'undefined'){/* Load one time video MediaStream if was not loaded yet*/
             this.loaded_video = await this.videoMediaStream;
             this.model_prediction = await this.loaded_model;/*cargando el model*/
-            console.log(this.model_prediction);
+            //console.log(this.model_prediction);
 
             /*add video to HTML*/
             //VideoTracking.addVideo(document.querySelector('body'), this.loaded_video );// No es necesario anadir el HTML.... xd
@@ -216,6 +220,9 @@ class Prediction {
         return this.canvas_MediaStream;
     }
 
+
+
+
     async effect_blur_background(canvasElement, image, personSegmentation,  config){
         /*canvasElement where to draw the results*/
         /* config  = image--> imageData|HTMLimage|HTMLVideo, PersonSegmentation --> Prediction, edgeBlurAmount --> how many pixels to blur on the edge bettwen person and background, flipHorizontal --> flip image or not*/
@@ -223,15 +230,24 @@ class Prediction {
         const {backgroundBlurAmount, edgeBlurAmount, flipHorizontal} = config; 
         await bodyPix.drawBokehEffect(canvasElement, image, personSegmentation, backgroundBlurAmount, edgeBlurAmount, flipHorizontal);
     }
+
+
+    async virtual_background(canvasElement, videoElement, personSegmentation,  config){
+       
+        await virtualBackground_(personSegmentation, canvasElement, videoElement, config);
+    }
+
+
     stopAnimationLoop(){
         /*Working*/
-
+        this.stop = true;
+        return this.stop;
     }
 
     async loop_(type_prediciton, canvasElement, config){
         //effect_function, parameters_function
  
-        const prediction = await this.make_prediction_load();  
+        const prediction = await this.make_prediction_load();
         const loaded_video = this.loaded_video;
         const model_prediction = this.model_prediction;
 
@@ -253,12 +269,14 @@ class Prediction {
         }
         */
 
-
+        /*Second*/
         VideoTracking.addVideo(document.querySelector('body'), canvasElement);// No es necesario anadir el HTML.... xd
 
      /*Animation Loop*/
-     const loopping = async () => {/*Loop for animation*/
-        if (type_prediciton == 1){
+     
+     const loopping = async () =>{/*Loop for animation*/
+
+        if (type_prediciton == 1){/*Blur Background*/
             /*Opciones sacar datos de la imagen / mandar directamente el HTML tag*/
             //const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold}
             
@@ -267,44 +285,78 @@ class Prediction {
      
             this.effect_blur_background(canvasElement, this.loaded_video, prediction_frame,  config);
         }
-        
+
+
+        if(type_prediciton === 2){/*Virtual Background*/
+            
+            const prediction_frame = await model_prediction.segmentPerson(loaded_video, config);
+
+
+            //this.effect_blur_background(canvasElement, this.loaded_video, prediction_frame,  config);
+            //console.log(config);
+            
+            
+            this.virtual_background(canvasElement, this.loaded_video, prediction_frame,  config);
+
+
+        }
+
+
+
+        if(this.stop){
+            //console.log("acabo el loop");
+            /*remove canvas If visible in the DOM*/
+            canvasElement.remove();
+            return;
+        }
         window.requestAnimationFrame(loopping);
+
+
        }
+
      loopping();
+
     }
 
     
 }
 
-
-
-
-
 //Testing New Classes
-    //constructor(width, height, model_config, config_constrains, config_prediction )
-    /*Dimensions of the input video width, height*/
-    /* modelConfig = architecture: 'ResNet', 'mobileNetV1', outputStride: 8,16,32, multiplier: 1,0.75,0.50, quantBytes: 1,.75,.50 only mobile*/
-    /* config_constrains = audio: audio_config, video: video_config*/
-    /*config_prediction = flipHorizontal: true, internalResolution: 'high', segmentationThreshold: 0.7*/
-    /*config_prediction (additional for MultiPerson) = maxDetections: 10,scoreThreshold: 0.2, nmsRadius: 20, minKeypointScore: 0.3, refineSteps: 10*/
+//constructor(width, height, model_config, config_constrains, config_prediction )
+/*Dimensions of the input video width, height*/
+/* modelConfig = architecture: 'ResNet', 'mobileNetV1', outputStride: 8,16,32, multiplier: 1,0.75,0.50, quantBytes: 1,.75,.50 only mobile*/
+/* config_constrains = audio: audio_config, video: video_config*/
+/*config_prediction = flipHorizontal: true, internalResolution: 'high', segmentationThreshold: 0.7*/
+/*config_prediction (additional for MultiPerson) = maxDetections: 10,scoreThreshold: 0.2, nmsRadius: 20, minKeypointScore: 0.3, refineSteps: 10*/
 const model_config = { architecture: 'MobileNetV1', outputStride: 16, multiplier: 0.75, quantBytes: 2}
 const config_constrains = {audio: false, video: true}
 const config_prediction = {  flipHorizontal: false, internalResolution: 'high', segmentationThreshold: 0.7}
 const config_effect_bokek = {backgroundBlurAmount: 5, edgeBlurAmount: 5, flipHorizontal: false}
+
+const config_virtual_background = {backgroundBlurAmount: 5, edgeBlurAmount: 5, flipHorizontal: false, URL: './js.jpg', width: 640, height:480};
+
 const Tracking = new VideoTracking(640, 480, model_config, config_constrains, config_prediction);
 
 
-console.log(Tracking.model);
-console.log(Tracking.predictionModel);/* Run Prediciont with A then....*/
+//console.log(Tracking.model);
+//console.log(Tracking.predictionModel);/* Run Prediciont with A then....*/
 
 
-//Tracking.predictionModel.
-Tracking.predictionModel.loop_(1, Tracking.canvasElement,  config_effect_bokek, Tracking.VideoElement);
-const test = Tracking.predictionModel.request_canvas_MediaStream(25);
-console.log(test);
+//Tracking.predictionModel.w
+/*Implementando 1...PersonSementation, Blur Background */
+//Tracking.predictionModel.loop_(1, Tracking.canvasElement,  config_effect_bokek, Tracking.VideoElement);
+//const test = Tracking.predictionModel.request_canvas_MediaStream(25);
+
+//Implementado 2... PersonSegmenttion, 
+Tracking.predictionModel.loop_(2, Tracking.canvasElement,  config_virtual_background, Tracking.VideoElement);
+//const test_2 = Tracking.predictionModel.request_canvas_MediaStream(25);
+
+//console.log(test);
 //Falta el Loop
+//console.log(Tracking.predictionModel);
 
-
+/*Stop Anmation Loop*/
+//Tracking.predictionModel.stopAnimationLoop();
 
 
 
@@ -360,11 +412,7 @@ const load = async () =>
     addVideo(document.querySelector('#main'), tracker.video);
     tracker.canvas_1 = createCanvas(true);
     addVideo(document.querySelector('#main'), tracker.canvas_1);
-    img_test = document.createElement('img'); // Use DOM HTMLImageElement
-    img_test.src = './js_blur.jpg';
-    img_test.alt = 'alt text';
-    img_test.width = 640;
-    img_test.height = 480;
+
     
     
     
@@ -392,7 +440,7 @@ async function execute() {
     //await blurBodyPart(tracker, [10, 11, 13, 12,2,3,4,5], 20, 5);
     
     //Blur Effect
-    //await blurBackground(tracker.canvas_1.firstChild, tracker.video, tracker.prediction, 18, 15,true);
+    //await blurBackground(tracker.canvas_1.firstChild, tracker.video, tracker.prediction, 18, 15,true);YA
     
     //GrayScale -- Pixel manipulation
     //grayScale(tracker);
