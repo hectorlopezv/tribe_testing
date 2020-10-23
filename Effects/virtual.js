@@ -16,12 +16,12 @@ async function virtualBackground_(prediction, canvasElement, videoElement, confi
     const pixelLength = map.length;
     
     //Video Data
-    const { data: videoData } = await videoImageData(width, height, URL);
-    
+    const { data: videoData } = await videoImageData(width, height, videoElement);
+    //console.log(videoData);
     //imageData
     const {data: imgData} = await getImageData(width, height, URL);
+    //console.log(imgData);
 
-/*
     //es los pixels de no persona dibujar La imagen en si
     for (let i = 0; i < pixelLength; i++) {
         //los pixels de la imagen si es no es persona
@@ -44,9 +44,7 @@ async function virtualBackground_(prediction, canvasElement, videoElement, confi
     const backgroundBlur = 2;
     const virtualBackgroundOverlay = 1;
     
-    bodyPix.drawMask(canvas, document.querySelector('video'), 
-    newImg, virtualBackgroundOverlay, backgroundBlur, false);    
-    */
+    bodyPix.drawMask(canvas, videoElement, newImg, virtualBackgroundOverlay, backgroundBlur, false);    
 
 
 }
@@ -56,6 +54,7 @@ export default virtualBackground_;
 
 const videoImageData = async (width, height, videoElement) => {
     /*Create Canvas*/
+    
     const canvas = document.createElement('canvas');
     canvas.setAttribute('width', width);
     canvas.setAttribute('height', height);
