@@ -1,26 +1,41 @@
 //Class Video_Tracking
 class VideoTracking {
-    constructor(width, height, model_config, config_constrains, config_prediction ){
-        /*Dimensions of the input video width, height*/
-        /* modelConfig = architecture: 'ResNet', 'mobileNetV1', outputStride: 8,16,32, multiplier: 1,0.75,0.50, quantBytes: 1,.75,.50 only mobile*/
-        /* config_constrains = audio: audio_config, video: video_config*/
-        /*config_prediction = flipHorizontal: true, internalResolution: 'high', segmentationThreshold: 0.7*/
-        /*config_prediction (additional for MultiPerson) = maxDetections: 10,scoreThreshold: 0.2, nmsRadius: 20, minKeypointScore: 0.3, refineSteps: 10*/
+    constructor(model_config_number, config_prediction_number, type_device_number, device_id_str = 'null' ){
+
+        this.model_architeture_options = [{architecture: "MobileNetV1", outputStride: 16, multiplier: 0.5, quantBytes: 2,},
+            { architecture: 'MobileNetV1', outputStride: 16, multiplier: 0.75, quantBytes: 2},
+            { architecture: 'MobileNetV1', outputStride: 16, multiplier: 0.75, quantBytes: 2}, 
+            { architecture: 'MobileNetV1', outputStride: 8, multiplier: 1, quantBytes: 2},
+            { architecture: 'ResNet50', outputStride: 16, quantBytes: 2}];
         
-        /*Permissions and SetUp Video*/
+        this.effect_config_precission = [{  flipHorizontal: false, internalResolution: 'low', segmentationThreshold: 0.7},
+            {  flipHorizontal: false, internalResolution: 'medium', segmentationThreshold: 0.7},
+            {  flipHorizontal: false, internalResolution: 'high', segmentationThreshold: 0.7},
+            {  flipHorizontal: false, internalResolution: 'ultra', segmentationThreshold: 0.7}];
         
-        //this.VideoElement = this.createVideo(); /*Video Element*/
-        //this.videoStream = this.load_Video_stream(config_constrains);/*videoStream Media Stream*/
-        //this.canvasElement = this.createCanvas(width, height);/*Create canvas to Write to setting some dimensions*/
+        this.type_of_device = [ { audio: false, video: { facingMode: "user", width: { min: 640, ideal: 1280, max: 1920 }, height: { min: 480, ideal: 720, max: 1080 } }},
+            { audio: false, video: { facingMode: { exact: "environment" }, width: { min: 640, ideal: 1280, max: 1920 }, height: { min: 480, ideal: 720, max: 1080 } }},
+            { audio: false, video: {deviceId: device_id_str,  width: { min: 640, ideal: 1280, max: 1920 }, height: { min: 480, ideal: 720, max: 1080 } }},
+            { audio: false, video: { width: { min: 640, ideal: 1280, max: 1920 }, height: { min: 480, ideal: 720, max: 1080 } }}];
+
+
+        this.selection_model_option =  this.model_architeture_options[model_config_number];
+        console.log(this.selection_model_option)
+
+        this.selection_effect_option = this.effect_config_precission[config_prediction_number];
         
-        //this.model_config = model_config;
-        //this.config_prediction = config_prediction;
+        this.selection_type_device = this.type_of_device[type_device_number];
         
-        this.VideoElement = this.createVideo(); /*Video Element*/
-        this.canvasElement = this.createCanvas(false, width, height);/*Create canvas to Write to setting some dimensions*/
-        this.model =  this._load_model(model_config);/*Promise Containtng Model*/
-        this.videoStream =  this.load_Video_stream(config_constrains);/*Promise Containing Video MediaStream*/
-        this.predictionModel = new Prediction(config_prediction, this.model, this.videoStream, this.canvasElement);
+        this.model = this._load_model(this.selection_model_option);/*Promise Containtng Model*/
+        this.videoStream =  this.load_Video_stream( this.selection_type_device);/*Promise Containing Video MediaStream*/
+
+
+        this.VideoElement = this.createVideo(640, 480); /*Video Element*/
+        this.canvasElement = this.createCanvas(640, 480);/*Create canvas to Write to setting some dimensions*/
+
+
+
+        this.predictionModel = new Prediction(this.selection_effect_option, this.model, this.videoStream, this.canvasElement);
     }
 
     
@@ -38,21 +53,25 @@ class VideoTracking {
         /* config_constrains = audio: audio_config, video: video_config*/
         /*Dimensions for video*/
         /*HTMLvideoElement*/
+       
      
         const stream = await navigator.mediaDevices.getUserMedia(config_constrains);/*MediaStream Video*/
+        console.log(stream);
         this.VideoElement.srcObject = stream;/*SetVideo Stream Source*/ /*MediaStream Video*/
         this.video_stream = stream;
 
-        //Retornamos promesa para forzar que espere y retorne
+
         return this.PromiseCreator();
 
         //return stream;/*Return Stream VideoElement*/
     }
     
-    createVideo(){
+    createVideo(width, height){
         /*Create Video de donde sacaramos la informacion para hacer la prediccion y posteriormente dibujar el canvas*/
         const video = document.createElement('video');
         video.setAttribute('autoplay','false');
+        video.setAttribute('width', width);
+        video.setAttribute('height', height);
         //video.setAttribute('playsinline', 'false');
         //video.setAttribute('controls', 'false');
         //video.style.visibility = 'visible';
@@ -60,21 +79,10 @@ class VideoTracking {
         return video;
     }
 
-    createCanvas(option = false, width, height){
-        /*Option --> True - False*/
+    createCanvas(width, height){
         const canvas = document.createElement('canvas');
-        canvas.setAttribute('width', '640');
-        canvas.setAttribute('height', '480');
-        if(option){/* True return canvas inside a DIV*/
-          const container = document.createElement('div');
-          container.classList.add('container');
-          container.appendChild(canvas); //container > canvas
-          canvas.setAttribute('autoplay','false');
-          //canvas.setAttribute('playsinline', 'false');
-          //canvas.setAttribute('controls', 'false');
-          return container;
-        }
-
+        canvas.setAttribute('width', width);
+        canvas.setAttribute('height', height);
         return canvas
       }
     
@@ -231,7 +239,7 @@ class Prediction {
         await this.virtualBackground_(personSegmentation, canvasElement, videoElement, config);
     }
 
-     async blurBodyPart_(canvasElement, videoElement, personSegmentationParts,  config ) {
+     async blurBodyPart_(canvasElement, videoElement, personSegmentationParts,  config) {
 
         /*Reference of Body Parts*/
         const parts = {
@@ -266,14 +274,8 @@ class Prediction {
         await bodyPix.blurBodyPart(
             canvasElement, videoElement, personSegmentationParts, faceBodyPartIdsToBlur,
             backgroundBlurAmount, edgeBlurAmount, flipHorizontal);
-    
-    
-    
-    
     }
      
-    
-
     async grayScale(canvasElement, videoElement, personSegmentation, config){
         
         const {width, height} = config;
@@ -327,21 +329,21 @@ class Prediction {
                 //const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold}
                 const prediction_frame = await model_prediction.segmentPerson(loaded_video, config);
                 this.effect_blur_background(canvasElement, this.loaded_video, prediction_frame,  config);
-                canvasElement.getContext('2d').clearRect(0, 0, canvasElement.width, canvasElement.height);
+
             }
 
             else if (type_prediciton === 2){/*Virtual Background - PersonSegmentation*/
                 
                 const prediction_frame = await model_prediction.segmentPerson(loaded_video, config);     
                 this.virtual_background(canvasElement, this.loaded_video, prediction_frame,  config);
-                canvasElement.getContext('2d').clearRect(0, 0, canvasElement.width, canvasElement.height);
+    
             }
 
             else if(type_prediciton === 3){/*Gray SCale - PersonSegmentation*/
                 
                 const prediction_frame = await model_prediction.segmentPerson(loaded_video, config);     
                 this.grayScale(canvasElement, this.loaded_video, prediction_frame, config);
-                canvasElement.getContext('2d').clearRect(0, 0, canvasElement.width, canvasElement.height);
+              
             }
 
             else if(type_prediciton === 4){/*Blur Body PARTS - PersonSegmentationPARTS*/
@@ -373,33 +375,60 @@ class Prediction {
 /*config_prediction (additional for MultiPerson) = maxDetections: 10,scoreThreshold: 0.2, nmsRadius: 20, minKeypointScore: 0.3, refineSteps: 10*/
 
 /* Podemos definir 3 categorias Small, Medium, High Para la configuracion del Modelo*/
-const model_config = { architecture: 'MobileNetV1', outputStride: 16, multiplier: 0.75, quantBytes: 2}
+const model_config_ultra_low = {architecture: "MobileNetV1", outputStride: 16, multiplier: 0.5, quantBytes: 2,}//0
+const model_config_low = { architecture: 'MobileNetV1', outputStride: 16, multiplier: 0.75, quantBytes: 2}; //1
+const model_config_medium = { architecture: 'MobileNetV1', outputStride: 16, multiplier: 0.75, quantBytes: 2}; //2
+const model_config_high = { architecture: 'MobileNetV1', outputStride: 8, multiplier: 1, quantBytes: 2}; //3
+const model_config_ultra = { architecture: 'ResNet50', outputStride: 16, quantBytes: 2}; //4
 
-/*configuraciones de la prediciones*/
-const effect_config_precission = {  flipHorizontal: false, internalResolution: 'high', segmentationThreshold: 0.7,  width: 640, height:480}
 
-/*Podemos Definir las dimensiones del video*/
-const config_constrains = {audio: false, video: true}
+/*Configuraciones De Las Prediciones*/
+const effect_config_precission_low = {  flipHorizontal: false, internalResolution: 'low', segmentationThreshold: 0.7}//0
+const effect_config_precission_mid = {  flipHorizontal: false, internalResolution: 'medium', segmentationThreshold: 0.7}//1
+const effect_config_precission_high = {  flipHorizontal: false, internalResolution: 'high', segmentationThreshold: 0.7}//2
+const effect_config_precission_ultra = {  flipHorizontal: false, internalResolution: 'ultra', segmentationThreshold: 0.7}//3
 
+
+/*Podemos Definir las dimensiones del video - ademas de cual camara pedir en moviles - dispositivo disponble en escritorio*/
+/*Types of Devices and camera Selected*/
+const mobile_front_camera = { audio: false, video: { facingMode: "user", width: { min: 640, ideal: 1280, max: 1920 }, height: { min: 480, ideal: 720, max: 1080 } }};//0
+const mobile_rear_camera = { audio: false, video: { facingMode: { exact: "environment" }, width: { min: 640, ideal: 1280, max: 1920 }, height: { min: 480, ideal: 720, max: 1080 } }};//1
+const desktop_selected_camera_device =  { audio: false, video: {deviceId: "0faf4c1dc3b35ff09df6a31cfb747fd82b1666fb9c6c9e0a39c7dd83c9311157" , width: { min: 640, ideal: 1280, max: 1920 }, height: { min: 480, ideal: 720, max: 1080 } }};//2
+const desktop_select_camera_default = { audio: false, video: { width: { min: 640, ideal: 1280, max: 1920 }, height: { min: 480, ideal: 720, max: 1080 } }};//3
 
 
 /*Configuracion del los Efectos*/
-const config_effect_bokek = {backgroundBlurAmount: 5, edgeBlurAmount: 5, ...effect_config_precission};
-
-const config_virtual_background = {backgroundBlurAmount: 1, edgeBlurAmount: 1,  URL: './js.jpg', ...effect_config_precission};
-const config_greyScale = {...effect_config_precission};
-const config_blur_body_part = { backgroundBlurAmount: 10, edgeBlurAmount: 5, faceBodyPartIdsToBlur: [0, 1], ...effect_config_precission };
+const config_effect_bokek = {backgroundBlurAmount: 20, edgeBlurAmount: 10};
+const config_virtual_background = {backgroundBlurAmount: 1, edgeBlurAmount: 1.4,  URL: './js.jpg'};
+const config_greyScale = {};
+const config_blur_body_part = { backgroundBlurAmount: 30, edgeBlurAmount: 2.1, faceBodyPartIdsToBlur: [0, 1] };
 
 
 /*Objecto Tracker*/
-const Tracking = new VideoTracking(640, 480, model_config, config_constrains, effect_config_precission);
+//width, height, model_config_number, config_constrains, config_prediction
+const type_model_architecture = 1;
+const effect_config_type = 2;
+const type_of_device = 3;
+const camera_id_str = 'testing';//When Passing type_of_device === 2
+
+
+/*las dimensiones que se piden el el mediaStream*/
+const video_configs = { audio: false, 
+    video: {
+      width: { min: 640, ideal: 1280, max: 1920 },
+      height: { min: 480, ideal: 720, max: 1080 }
+    }
+  }
+
+
+const Tracking = new VideoTracking(type_model_architecture, effect_config_type, type_of_device);
 
 
 
 //Tracking.predictionModel.w
 /*Implementando 1...PersonSementation, Blur Background */
-//Tracking.predictionModel.loop_(1, Tracking.canvasElement,  config_effect_bokek);
-//const test = Tracking.predictionModel.request_canvas_MediaStream(25);
+Tracking.predictionModel.loop_(1, Tracking.canvasElement,  config_effect_bokek);
+const test = Tracking.predictionModel.request_canvas_MediaStream(25);
 
 //Implementado 2... VirtualBackground- PersonSegmenttion, 
 //Tracking.predictionModel.loop_(2, Tracking.canvasElement,  config_virtual_background);
@@ -411,12 +440,7 @@ const Tracking = new VideoTracking(640, 480, model_config, config_constrains, ef
 
 
 //Implementando4 ... Blur BodyParts - PersonSegmentationParts
-Tracking.predictionModel.loop_(4, Tracking.canvasElement,  config_blur_body_part);
-
-
-
-//Falta el Loop
-//console.log(Tracking.predictionModel);
+//Tracking.predictionModel.loop_(4, Tracking.canvasElement,  config_blur_body_part);
 
 /*Stop Anmation Loop*/
 //Tracking.predictionModel.stopAnimationLoop();
@@ -438,139 +462,9 @@ Tracking.predictionModel.loop_(4, Tracking.canvasElement,  config_blur_body_part
 
 
 
-//cargamos el modelo...
-const architecture = 'MobileNetV1';
-const outputStride = 16; 
-const multiplier = 1;
-const quantBytes = 4;
-let img_test = 0;
-
-document.querySelector('#btn').onclick = () => {
-    for (let index = 0; index < 50; index++) {
-        console.log('ESTA aqui')
-        
-    }
-}
 
 
 
-async function execute() {
-   
-    //prediction Person
-    await makePredictionPerson(tracker);
-    
-    
-  
-    //prediction BodyParts Person
-    //await predictionBodyParts(tracker);
-
-    //blur Body parts
-    //await blurBodyPart(tracker, [10, 11, 13, 12,2,3,4,5], 20, 5);
-    
-    //Blur Effect
-    //await blurBackground(tracker.canvas_1.firstChild, tracker.video, tracker.prediction, 18, 15,true);YA
-    
-    //GrayScale -- Pixel manipulation
-    //grayScale(tracker);
-    
-    //background manipulation
-    //const URL = './js.jpg';
-    //await virtualBackground(URL, tracker.video.width, tracker.video.height, tracker, true);
-
-    //Canvas To Image(donwload) -- type, quality0-1, nameFile, canvas
-    //canvasToImage('image/jpeg', 1, 'hector', tracker.canvas_1.firstChild);
-
-    //change body part for a Background
-    //changeBodyPartImage(tracker, tracker.canvas_1.firstChild.width, 
-    //tracker.canvas_1.firstChild.height, URL, true);
-
-
-    //Blur image
-
-   /*
-    cpuBlur(tracker.canvas_1.firstChild, img_test, 10);
-    //canvasToImage('image/jpeg', 1, 'hector', tracker.canvas_1.firstChild);
-        const maskBackground = true;
-    // Convert the segmentation into a mask to darken the background.
-    const foregroundColor = {r: 0, g: 0, b: 0, a: 255};
-    const backgroundColor = {r: 0, g: 0, b: 0, a: 0};
-    const mask = bodyPix.toMask(
-        tracker.prediction, foregroundColor, backgroundColor);
-    //console.log(backgroundDarkeningMask);
-    //hagamole blur al MASK
-    //const mask_blured = createCanvas(false);
-    const mask_canvas = document.createElement('canvas');
-    mask_canvas.setAttribute('width', '640');
-    mask_canvas.setAttribute('height', '480');
-
-    const mask_canvas_blur = document.createElement('canvas');
-    mask_canvas_blur.setAttribute('width', '640');
-    mask_canvas_blur.setAttribute('height', '480');
-    
-
-
-    //console.log(mask_blured);
-    const mask_canvas_context = mask_canvas.getContext('2d');
-    mask_canvas_context.putImageData(mask, 0, 0);
-    
-    const mask_canvas_blur_context = mask_canvas_blur.getContext('2d');
-    
-    //console.log(mask_blurred_completed);
-
-
-
-    document.querySelector('#blur').getContext('2d').clearRect(0, 0, 640, 480);
-    document.querySelector('#blur_2').getContext('2d').clearRect(0, 0, 640, 480);
-    //mask_canvas_context.save();
-    
-    const blur_1 = document.querySelector('#blur');
-    const blur_2 = document.querySelector('#blur_2');
-    const resu_mask_blur_canvas = await cpuBlur(blur_1, mask_canvas, 70);
-    const resu_mask_blur_imageData = resu_mask_blur_canvas.getContext('2d').getImageData(0,0,640,480);
-    //console.log(resu_mask_blur_imageData);
-
-    //replace black pixels to the ones in the video tag
-    const { data: videoData } = videoImageData(1,tracker.video.width, tracker.video.height);
-    const {data:map} =  resu_mask_blur_imageData;
-    const pixelLength = map.length;
-
-
-    //Getimage Data
-   
-    //blank canvas 
-    const newImg = blur_2.getContext('2d').createImageData(640, 480);
-    const newImgData = newImg.data;
-
-    //console.log(map)
-    for (let i = 0; i < pixelLength; i++) 
-    {
-        if (map[i] == 255){
-            newImgData[i] = videoData[i];
-            newImgData[i+1] = videoData[i+1];
-            newImgData[i+2] = videoData[i+2];
-            newImgData[i+3] = videoData[i+3];
-        }
-
-    }
-
-    const opacity = 1;
-    const maskBlurAmount = 0;
-    const flipHorizontal = false;
-    
-   
-    // Draw the mask onto the image on a canvas.  With opacity set to 0.7 and
-    // maskBlurAmount set to 3, this will darken the background and blur the
-    // darkened background's edge.
-    bodyPix.drawMask(
-        document.querySelector('#blur_2'), img_test, 
-        newImg, opacity, maskBlurAmount, flipHorizontal);
-
-        */
-     
-    
-    
-    //window.requestAnimationFrame(execute)
-}
 
 
 
