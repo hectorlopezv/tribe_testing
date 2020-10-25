@@ -13,10 +13,10 @@ class VideoTracking {
             {  flipHorizontal: false, internalResolution: 'high', segmentationThreshold: 0.7},
             {  flipHorizontal: false, internalResolution: 'ultra', segmentationThreshold: 0.7}];
         
-        this.type_of_device = [ { audio: false, video: { facingMode: "user", width: { min: 640, ideal: 1280, max: 1920 }, height: { min: 480, ideal: 720, max: 1080 } }},
-            { audio: false, video: { facingMode: { exact: "environment" }, width: { min: 640, ideal: 1280, max: 1920 }, height: { min: 480, ideal: 720, max: 1080 } }},
-            { audio: false, video: {deviceId: device_id_str,  width: { min: 640, ideal: 1280, max: 1920 }, height: { min: 480, ideal: 720, max: 1080 } }},
-            { audio: false, video: { width: { min: 640, ideal: 1280, max: 1920 }, height: { min: 480, ideal: 720, max: 1080 } }}];
+        this.type_of_device = [ { audio: false, video: { facingMode: "user", width: 960, height: 540 }},
+            { audio: false, video: { facingMode: { exact: "environment" }, width: 960, height: 540 }},
+            { audio: false, video: {deviceId: device_id_str,  width: 960, height:  540 }},
+            { audio: false, video: { width:  960, height: 540 }}];
 
 
         this.selection_model_option =  this.model_architeture_options[model_config_number];
@@ -27,14 +27,25 @@ class VideoTracking {
         
         this.model = this._load_model(this.selection_model_option);/*Promise Containtng Model*/
         this.videoStream =  this.load_Video_stream( this.selection_type_device);/*Promise Containing Video MediaStream*/
+        this.canvasElemenet = this.createCanvas(960, 540);
+        this.VideoElement = this.createVideo(960, 540); /*Video Element*/
 
 
 
      
         //this.canvasElement = this.createCanvas(this.width, this.height);/*Create canvas to Write to setting some dimensions*/
 
-        this.predictionModel = new Prediction (this.model, this.videoStream);
+
+        /*podemos usar esto*/
+        this.predictionModel = new Prediction (this.model, this.videoStream, this.canvasElemenet);
     }
+
+    createCanvas(width, height){
+        const canvas = document.createElement('canvas');
+        canvas.setAttribute('width', width);
+        canvas.setAttribute('height', height);
+        return canvas
+      }
 
     
     static addVideo(HTMLelement, videoElement) {
@@ -55,7 +66,6 @@ class VideoTracking {
         this.frameRate = stream.getVideoTracks()[0].getCapabilities().frameRate;
         this.height = stream.getVideoTracks()[0].getCapabilities().height;
         this.width = stream.getVideoTracks()[0].getCapabilities().width;
-        this.VideoElement = this.createVideo(this.width.max, this.height.max); /*Video Element*/
         this.VideoElement.srcObject = stream;/*SetVideo Stream Source*/ /*MediaStream Video*/
         this.video_stream = stream;
 
@@ -103,11 +113,12 @@ class Prediction {
    /*config = flipHorizontal: true, internalResolution: 'high', segmentationThreshold: 0.7*/
    /*config (additional for MultiPerson) = maxDetections: 10,scoreThreshold: 0.2, nmsRadius: 20, minKeypointScore: 0.3, refineSteps: 10*/
    /* type_prediciton = String 'Person', 'MultiPerson'*/ 
-    constructor( loaded_model, videoMediaStream){
+    constructor( loaded_model, videoMediaStream, canvasElemenet){
 
         this.loaded_model = loaded_model;/*Promise of Model*/
         this.videoMediaStream = videoMediaStream;
         this.stop = false;/*Stop Animation Loop*/
+        this.canvasElement = canvasElemenet;
     }
 
     async make_prediction_load(){ /* Returns unit8Campled for every pixel in the Ho*Wo Element array 0: Backgrounnd : 1:Person*/
@@ -119,47 +130,54 @@ class Prediction {
             /*add video to HTML*/
             this.height = this.loaded_video.srcObject.getVideoTracks()[0].getCapabilities().height;
             this.width = this.loaded_video.srcObject.getVideoTracks()[0].getCapabilities().width;
-            this.canvas_MediaStream(25, this.width.max, this.height.max);
-            //VideoTracking.addVideo(document.querySelector('body'), this.loaded_video );// No es necesario anadir el HTML.... xd
+
+            
+            VideoTracking.addVideo(document.querySelector('body'), this.loaded_video );// No es necesario anadir el HTML.... xd
         }
     }
 
-    async stream_properties(){
+    async stream_properties_mediaStream(){
         await this.make_prediction_load();/*if video is no loaded yet*/
-        console.log(this.loaded_video.srcObject);
         this.deviceId = this.loaded_video.srcObject.getVideoTracks()[0].getCapabilities().deviceId;
         this.frameRate = this.loaded_video.srcObject.getVideoTracks()[0].getCapabilities().frameRate;
         this.height = this.loaded_video.srcObject.getVideoTracks()[0].getCapabilities().height;
         this.width = this.loaded_video.srcObject.getVideoTracks()[0].getCapabilities().width;
 
-        return [this.deviceId, this.frameRate, this.height, this.width];    
+        return [this.deviceId, this.frameRate, this.height, this.width ];    
     }
     
-    
-    canvas_MediaStream(fps, width, height){/*Give canvas Media stream */
-        this.canvasElement = this.createCanvas(width, height);
+    canvas_mediStream(){
+        const stream = this.canvasElement.captureStream(24);
 
-        this.canvas_MediaStream = this.canvasElement.captureStream(fps);
-        window.canvas_stream = this.canvas_MediaStream;
-        return this.canvas_MediaStream;
+        /*Adding stream to video for testing*/
+        const test_video = document.querySelector('#testing');
+       
+       
+       /*testing canvas_mediStream*/
+        test_video.setAttribute('width', 960);
+        test_video.setAttribute('height', 540);
+        test_video.setAttribute('autoplay', 'true');
+        
+        test_video.onloadedmetadata = () => {
+            test_video.width = test_video.videoWidth;
+            test_video.height = test_video.videoHeight;
+        };
+        test_video.style.visibility = 'visible';
+        test_video.srcObject = stream;
+        this.canvas_stream = stream;
+        return stream;
+
     }
 
-    canvas_media_stream(){
-        return this.canvas_MediaStream;
-    }
-    createCanvas(width, height){
-        const canvas = document.createElement('canvas');
-        canvas.setAttribute('width', width);
-        canvas.setAttribute('height', height);
-        return canvas
-      }
+
 
     
     async virtualBackground_(prediction, canvasElement, videoElement, config){
-        const {URL, width, height} = config;
+ 
+        const {URL} = config;
         //new canvas
         const canvas = canvasElement;//cremaos un blank array para llenarlo
-        const newImg = canvas.getContext('2d').createImageData(width, height);//create blank new ImageData
+        const newImg = canvas.getContext('2d').createImageData(960, 540);//create blank new ImageData
         const newImgData = newImg.data;
 
         //prediction
@@ -167,10 +185,10 @@ class Prediction {
         const pixelLength = map.length;
         
         //Video Data
-        const { data: videoData } = await this.videoImageData(width, height, videoElement);
+        const { data: videoData } = await this.videoImageData(960, 540, videoElement);
     
         //imageData
-        const {data: imgData} = await this.getImageData(width, height, URL);
+        const {data: imgData} = await this.getImageData(960, 540, URL);
 
         //es los pixels de no persona dibujar La imagen en si
         for (let i = 0; i < pixelLength; i++) {
@@ -287,11 +305,11 @@ class Prediction {
      
     async grayScale(canvasElement, videoElement, personSegmentation, config){
         
-        const {width, height} = config;
+      
         const {data:map} = personSegmentation;
         
         // Extracting video data
-        const { data:imgData } = await this.videoImageData(width, height, videoElement);
+        const { data:imgData } = await this.videoImageData(960, 540, videoElement);
 
         //New canvas
         const canvas = canvasElement;
@@ -328,9 +346,7 @@ class Prediction {
         const prediction = await this.make_prediction_load();
         const loaded_video = this.loaded_video;
         const model_prediction = this.model_prediction;
-        console.log(this.canvasElement);
         
-
         /*Add canvas to HTML*/
        VideoTracking.addVideo(document.querySelector('body'), this.canvasElement);// No es necesario anadir el HTML.... xd
 
@@ -425,12 +441,7 @@ const camera_id_str = 'testing';//When Passing type_of_device === 2
 
 
 /*las dimensiones que se piden el el mediaStream*/
-const video_configs = { audio: false, 
-    video: {
-      width: { min: 640, ideal: 1280, max: 1920 },
-      height: { min: 480, ideal: 720, max: 1080 }
-    }
-  }
+const video_configs = { audio: false, video: {width: 960, height: 540}}
 
 
 const Tracking = new VideoTracking(type_model_architecture, effect_config_type, type_of_device);
@@ -439,15 +450,18 @@ const Tracking = new VideoTracking(type_model_architecture, effect_config_type, 
 
 //Tracking.predictionModel.w
 /*Implementando 1...PersonSementation, Blur Background */
-Tracking.predictionModel.loop_(1,  config_effect_bokek);
 
+//Tracking.predictionModel.loop_(1,  config_effect_bokek);
+//console.log(Tracking.predictionModel.stream_properties_mediaStream());
+//const canvas_stream = Tracking.predictionModel.canvas_mediStream();
+//console.log(canvas_stream);
 //const streamProperties = Tracking.predictionModel.stream_properties(test_stream);
 //console.log(streamProperties);
 
 //Implementado 2... VirtualBackground- PersonSegmenttion, 
-//Tracking.predictionModel.loop_(2, Tracking.canvasElement,  config_virtual_background);
-//const test_2 = Tracking.predictionModel.request_canvas_MediaStream(25);
-
+Tracking.predictionModel.loop_(2,  config_virtual_background);
+const canvas_stream = Tracking.predictionModel.canvas_mediStream();
+console.log(canvas_stream);
 //Implementado3  ... GrayScale Effect - Person Segmentation
 //Tracking.predictionModel.loop_(3, Tracking.canvasElement,  config_greyScale);
 
