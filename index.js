@@ -357,7 +357,6 @@ class Prediction {
                 //const config = { flipHorizontal: this.flipHorizontal, internalResolution: this.internalResolution, segmentationThreshold: this.segmentationThreshold}
                 const prediction_frame = await model_prediction.segmentPerson(loaded_video, config);
                 this.effect_blur_background(this.canvasElement, this.loaded_video, prediction_frame,  config);
-
             }
 
             else if (type_prediciton === 2){/*Virtual Background - PersonSegmentation*/
@@ -427,7 +426,7 @@ const desktop_select_camera_default = { audio: false, video: { width: { min: 640
 
 /*Configuracion del los Efectos*/
 const config_effect_bokek = {backgroundBlurAmount: 20, edgeBlurAmount: 10};
-const config_virtual_background = {backgroundBlurAmount: 1, edgeBlurAmount: 1.4,  URL: './js.jpg'};
+const config_virtual_background = {backgroundBlurAmount: 1, edgeBlurAmount: 2.1,  URL: './js.jpg'};
 const config_greyScale = {};
 const config_blur_body_part = { backgroundBlurAmount: 30, edgeBlurAmount: 2.1, faceBodyPartIdsToBlur: [0, 1] };
 
@@ -459,16 +458,21 @@ const Tracking = new VideoTracking(type_model_architecture, effect_config_type, 
 //console.log(streamProperties);
 
 //Implementado 2... VirtualBackground- PersonSegmenttion, 
-Tracking.predictionModel.loop_(2,  config_virtual_background);
-const canvas_stream = Tracking.predictionModel.canvas_mediStream();
-console.log(canvas_stream);
-//Implementado3  ... GrayScale Effect - Person Segmentation
-//Tracking.predictionModel.loop_(3, Tracking.canvasElement,  config_greyScale);
+//Tracking.predictionModel.loop_(2,  config_virtual_background);
+//const canvas_stream = Tracking.predictionModel.canvas_mediStream();
+//console.log(canvas_stream);
 
+//Implementado3  ... GrayScale Effect - Person Segmentation
+//Tracking.predictionModel.loop_(3, config_greyScale);
+//const canvas_stream = Tracking.predictionModel.canvas_mediStream();
+//console.log(canvas_stream);
 
 
 //Implementando4 ... Blur BodyParts - PersonSegmentationParts
-//Tracking.predictionModel.loop_(4, Tracking.canvasElement,  config_blur_body_part);
+Tracking.predictionModel.loop_(4, config_blur_body_part);
+const canvas_stream = Tracking.predictionModel.canvas_mediStream();
+console.log(canvas_stream);
+
 
 /*Stop Anmation Loop*/
 //Tracking.predictionModel.stopAnimationLoop();
